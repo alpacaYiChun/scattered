@@ -11,7 +11,7 @@ import com.amazonaws.services.lambda.runtime.events.KinesisEvent;
 import com.amazonaws.services.lambda.runtime.events.KinesisEvent.KinesisEventRecord;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.suneo.flag.db.DynamodbOperation;
+import com.suneo.flag.db.operation.DynamodbOperation;
 import com.suneo.flag.db.dao.PostDAO;
 import com.suneo.flag.db.module.DBModule;
 

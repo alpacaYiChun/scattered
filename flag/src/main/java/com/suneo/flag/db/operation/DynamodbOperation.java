@@ -1,4 +1,4 @@
-package com.suneo.flag.db;
+package com.suneo.flag.db.operation;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -11,7 +11,6 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.google.inject.Guice;
-import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.suneo.flag.db.dao.CommentDAO;
 import com.suneo.flag.db.dao.FollowDAO;
@@ -20,8 +19,11 @@ import com.suneo.flag.db.dao.UserDAO;
 import com.suneo.flag.db.module.DBModule;
 
 public class DynamodbOperation {
-	@Inject
-	private DynamoDBMapper mapper;
+	private final DynamoDBMapper mapper;
+
+	public DynamodbOperation(DynamoDBMapper mapper) {
+		this.mapper = mapper;
+	}
 		
 	public PostDAO loadPost(String id) {
 		PostDAO ret = PostDAO.builder().id(id).build();
