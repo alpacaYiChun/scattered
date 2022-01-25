@@ -1,5 +1,7 @@
 package com.suneo.flag.db.dao;
 
+import java.io.Serializable;
+
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
@@ -16,7 +18,9 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @DynamoDBTable(tableName = "Comment")
-public class CommentDAO {
+public class CommentDAO implements Serializable {
+	private static final long serialVersionUID = 1787065760497761216L;
+
 	@DynamoDBHashKey(attributeName = "CommentId")
     private String commentId;
 	

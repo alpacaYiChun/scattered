@@ -70,6 +70,22 @@ public class DynamodbOperation {
 		return mapper.load(userDAO);
 	}
 	
+	public List<PostDAO> queryPostsByUserAndTimeInterval(String userId, long start, long end) {
+        Map<String, AttributeValue> valueMapping = new HashMap<String, AttributeValue>();
+        valueMapping.put(":v_user_id", new AttributeValue().withS(userId));
+        valueMapping.put(":v_start", new AttributeValue().withN(Long.valueOf(start).toString()));
+        valueMapping.put(":v_end", new AttributeValue().withN(Long.valueOf(end).toString()));
+        
+        DynamoDBQueryExpression<PostDAO> expression = new DynamoDBQueryExpression<PostDAO>()
+    			.withIndexName("UserTimeIndex")
+    			.withKeyConditionExpression("TS >= :v_start and TS <= :v_end and UserId = :v_user_id")
+    			.withExpressionAttributeValues(valueMapping)
+    			.withConsistentRead(false);
+        
+        return mapper.query(PostDAO.class, expression).stream().collect(Collectors.toList());
+        
+	}
+	
     public List<PostDAO> queryPostsByUserAndTimeStamp(String userId, long timestamp) {
         Map<String, AttributeValue> valueMapping = new HashMap<String, AttributeValue>();
         valueMapping.put(":v_user_id", new AttributeValue().withS(userId));
@@ -81,15 +97,7 @@ public class DynamodbOperation {
     			.withExpressionAttributeValues(valueMapping)
     			.withConsistentRead(false);
     	
-       	Iterator<PostDAO> iter = mapper.query(PostDAO.class, expression).iterator();
-       	List<PostDAO> ret = new ArrayList<>();
-    	while(iter.hasNext()) {
-    		PostDAO post = iter.next();
-    		post = this.loadPost(post);
-    	    ret.add(post);
-    	}
-    	
-    	return ret;
+    	return mapper.query(PostDAO.class, expression).stream().collect(Collectors.toList());  	
     }
     
     public List<CommentDAO> queryCommentsByPost(String postID) {

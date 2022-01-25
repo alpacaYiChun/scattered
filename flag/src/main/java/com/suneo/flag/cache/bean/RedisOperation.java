@@ -27,4 +27,8 @@ public class RedisOperation {
     public byte[] getBinary(byte[] key) {
         return cluster.get(key);
     }
+    
+    public List<byte[]> getBinaryList(byte[] key){
+    	return cluster.lrange(key, 0, -1);
+    }
 }

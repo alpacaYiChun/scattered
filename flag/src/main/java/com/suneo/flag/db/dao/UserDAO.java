@@ -1,5 +1,7 @@
 package com.suneo.flag.db.dao;
 
+import java.io.Serializable;
+
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
@@ -16,7 +18,9 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @DynamoDBTable(tableName="User")
-public class UserDAO {
+public class UserDAO implements Serializable {
+	private static final long serialVersionUID = 8821549867458892517L;
+
 	@DynamoDBHashKey(attributeName = "UserId")
     private String userId;
 	

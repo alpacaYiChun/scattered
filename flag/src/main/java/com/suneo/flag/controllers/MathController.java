@@ -13,7 +13,7 @@ public class MathController {
 	private RedisOperation jedis;
 	
 	@GetMapping("getkey/{key}")
-	public String getkey(String key) {
+	public String getkey(@PathVariable String key) {
 		return jedis.get(key);
 	}
     @GetMapping("add/{a}/{b}")
