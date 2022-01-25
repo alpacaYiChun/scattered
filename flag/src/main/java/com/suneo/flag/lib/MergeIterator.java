@@ -46,7 +46,7 @@ public class MergeIterator {
 		while(!queue.isEmpty()) {
 			MergeItem<T> fetch = queue.poll();
 			T got = fetch.peek();
-			if(ret.size()==0||ret.get(ret.size()-1)!=got) {
+			if(ret.size()==0||!ret.get(ret.size()-1).equals(got)) {
 				ret.add(got);
 			}
 			if(fetch.hasNext()) {
