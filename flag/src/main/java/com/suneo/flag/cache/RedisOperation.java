@@ -1,16 +1,14 @@
-package com.suneo.flag.cache.bean;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+package com.suneo.flag.cache;
 
 import redis.clients.jedis.JedisCluster;
-
 import java.util.List;
 
-@Service
 public class RedisOperation {
-    @Autowired
-    private JedisCluster cluster;
+    private final JedisCluster cluster;
+
+    public RedisOperation(JedisCluster cluster) {
+        this.cluster = cluster;
+    }
 
     public boolean exists(String key) {
         return cluster.exists(key);
@@ -30,5 +28,9 @@ public class RedisOperation {
     
     public List<byte[]> getBinaryList(byte[] key){
     	return cluster.lrange(key, 0, -1);
+    }
+
+    public void append(byte[] key, byte[] value) {
+        cluster.rpush(key, value);
     }
 }

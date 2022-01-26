@@ -1,6 +1,7 @@
 package com.suneo.flag.handler;
 
-import com.suneo.flag.cache.bean.RedisOperation;
+import com.suneo.flag.cache.CacheConstants;
+import com.suneo.flag.cache.RedisOperation;
 import com.suneo.flag.db.dao.FollowDAO;
 import com.suneo.flag.db.dao.PostDAO;
 import com.suneo.flag.db.operation.DynamodbOperation;
@@ -16,8 +17,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public class PullBlogsHandler implements Handler{
-    private static final int INTERVAL_MILLSECONDS = 60*1000;
-
     @Autowired
     private DynamodbOperation dynamodbOperation;
 
@@ -29,8 +28,8 @@ public class PullBlogsHandler implements Handler{
         long end = (Long)params.get(Constants.END_TIMESTAMP);
         long start = (Long)params.get(Constants.START_TIMESTAMP);
 
-        long startSlotIndex = end / INTERVAL_MILLSECONDS;
-        long endSlotIndex = start / INTERVAL_MILLSECONDS;
+        long startSlotIndex = start / CacheConstants.INTERVAL_MILLSECONDS;
+        long endSlotIndex = end / CacheConstants.INTERVAL_MILLSECONDS;
 
         String user = String.valueOf(params.get(Constants.USER_NAME));
 
@@ -67,8 +66,8 @@ public class PullBlogsHandler implements Handler{
                 }
 
                 if(max >= min) {
-                    long from = min * INTERVAL_MILLSECONDS;
-                    long to = max * INTERVAL_MILLSECONDS;
+                    long from = min * CacheConstants.INTERVAL_MILLSECONDS;
+                    long to = max * CacheConstants.INTERVAL_MILLSECONDS;
                     List<PostDAO> cacheMissing = dynamodbOperation.queryPostsByUserAndTimeInterval(friend, from, to);
                     cacheMissing.sort((e1, e2) -> compLong(e1.getTimestamp(), e2.getTimestamp()));
                     posts.add(cacheMissing);       

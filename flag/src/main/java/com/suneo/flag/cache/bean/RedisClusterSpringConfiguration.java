@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
+import com.suneo.flag.cache.RedisOperation;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,7 +14,7 @@ import redis.clients.jedis.JedisCluster;
 import redis.clients.jedis.JedisPoolConfig;
 
 @Configuration
-public class RedisClusterConfig {	
+public class RedisClusterSpringConfiguration {
 	@Value("${spring.redis.cluster.nodes}")
 	private String nodes;
 	
@@ -49,5 +50,10 @@ public class RedisClusterConfig {
         jedisPoolConfig.setMinIdle(minIdle);
 		
 		return new JedisCluster(hostAndPorts, commandTimeout, jedisPoolConfig);
+	}
+
+	@Bean
+	public RedisOperation getRedisOperation(JedisCluster cluster) {
+		return new RedisOperation(cluster);
 	}
 }
