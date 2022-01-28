@@ -56,6 +56,16 @@ public class PullBlogsHandler implements Handler{
                             .sorted((e1, e2) -> compLong(e1.getTimestamp(), e2.getTimestamp()))
                             .collect(Collectors.toList());
                     posts.add(fromDB);
+                    List<byte[]> bytesOfPosts = fromDB.stream()
+                            .map(e -> {
+                                try {
+                                    return SerializationUtil.serialize(e);
+                                } catch (IOException ioException) {
+                                    return null;
+                                }
+                            })
+                            .collect(Collectors.toList());
+                    redisOperation.setFullList(friend.getBytes(), fromDB.size(), bytesOfPosts);
                 }
             });
         } catch (Exception e) {
