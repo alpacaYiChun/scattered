@@ -2,7 +2,6 @@ package com.suneo.flag.db.operation;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -69,36 +68,61 @@ public class DynamodbOperation {
 	public UserDAO loadUser(UserDAO userDAO) {
 		return mapper.load(userDAO);
 	}
-	
+
+	public List<PostDAO> queryPosts(String userId, Map<String, Object> params) {
+		long upperTimeStamp = System.currentTimeMillis();
+		long lowerTimeStamp = 0;
+		int limit = 10;
+
+		if(params.containsKey("limit")) {
+			limit = (Integer)params.get("limit");
+		}
+
+		if(params.containsKey("upper")) {
+			upperTimeStamp = (Long)params.get("upper");
+		}
+
+		if(params.containsKey("lower")) {
+			lowerTimeStamp = (Long)params.get("lower");
+		}
+
+		if(lowerTimeStamp > upperTimeStamp) {
+			upperTimeStamp ^= lowerTimeStamp;
+			lowerTimeStamp ^= upperTimeStamp;
+			upperTimeStamp ^= lowerTimeStamp;
+		}
+
+		limit = Math.min(limit, 100);
+
+		Map<String, AttributeValue> valueMapping = new HashMap<String, AttributeValue>();
+		valueMapping.put(":v_user_id", new AttributeValue().withS(userId));
+		valueMapping.put(":v_start", new AttributeValue().withN(Long.valueOf(lowerTimeStamp).toString()));
+		valueMapping.put(":v_end", new AttributeValue().withN(Long.valueOf(upperTimeStamp).toString()));
+
+		DynamoDBQueryExpression<PostDAO> expression = new DynamoDBQueryExpression<PostDAO>()
+				.withIndexName("UserTimeIndex")
+				.withKeyConditionExpression("TS >= :v_start and TS <= :v_end and UserId = :v_user_id")
+				.withExpressionAttributeValues(valueMapping)
+				.withConsistentRead(false)
+				.withLimit(limit);
+
+		return mapper.query(PostDAO.class, expression).stream().collect(Collectors.toList());
+	}
+
 	public List<PostDAO> queryPostsByUserAndTimeInterval(String userId, long start, long end) {
-        Map<String, AttributeValue> valueMapping = new HashMap<String, AttributeValue>();
-        valueMapping.put(":v_user_id", new AttributeValue().withS(userId));
-        valueMapping.put(":v_start", new AttributeValue().withN(Long.valueOf(start).toString()));
-        valueMapping.put(":v_end", new AttributeValue().withN(Long.valueOf(end).toString()));
-        
-        DynamoDBQueryExpression<PostDAO> expression = new DynamoDBQueryExpression<PostDAO>()
-    			.withIndexName("UserTimeIndex")
-    			.withKeyConditionExpression("TS >= :v_start and TS <= :v_end and UserId = :v_user_id")
-    			.withExpressionAttributeValues(valueMapping)
-    			.withConsistentRead(false);
-        
-        return mapper.query(PostDAO.class, expression).stream().collect(Collectors.toList());
-        
+        Map<String, Object> params = Map.of("upper", start, "lower", end);
+        return queryPosts(userId, params);
 	}
 	
-    public List<PostDAO> queryPostsByUserAndTimeStamp(String userId, long timestamp) {
-        Map<String, AttributeValue> valueMapping = new HashMap<String, AttributeValue>();
-        valueMapping.put(":v_user_id", new AttributeValue().withS(userId));
-        valueMapping.put(":v_timestamp", new AttributeValue().withN(Long.valueOf(timestamp).toString()));
-        
-    	DynamoDBQueryExpression<PostDAO> expression = new DynamoDBQueryExpression<PostDAO>()
-    			.withIndexName("UserTimeIndex")
-    			.withKeyConditionExpression("TS >= :v_timestamp and UserId = :v_user_id")
-    			.withExpressionAttributeValues(valueMapping)
-    			.withConsistentRead(false);
-    	
-    	return mapper.query(PostDAO.class, expression).stream().collect(Collectors.toList());  	
+    public List<PostDAO> queryPostsByUserAndLowerCutoff(String userId, long timestamp) {
+		Map<String, Object> params = Map.of("lower", timestamp);
+		return queryPosts(userId ,params);
     }
+
+    public List<PostDAO> queryPostsByUserAndUpperCutoff(String userId, long timestamp) {
+		Map<String, Object> params = Map.of("upper", timestamp);
+		return queryPosts(userId ,params);
+	}
     
     public List<CommentDAO> queryCommentsByPost(String postID) {
     	Map<String, AttributeValue> valueMapping = new HashMap<>();
@@ -155,7 +179,9 @@ public class DynamodbOperation {
     public void insertFollows(List<FollowDAO> follows) {
     	mapper.batchSave(follows);
     }
-    
+
+    // Below are tests
+
     public void testInsertPost() {
     	PostDAO post = PostDAO.builder()
     			.content("Suneo created some very smelly socks, you smell?")
@@ -169,7 +195,7 @@ public class DynamodbOperation {
     }
     
     public void testQueryPost() {
-    	List<PostDAO> list = queryPostsByUserAndTimeStamp("suneo-003", 2001);
+    	List<PostDAO> list = queryPostsByUserAndLowerCutoff("suneo-003", 2001);
     	for(PostDAO post : list) {
     		System.out.println("TianYiMing: " + post.toString());
     	}

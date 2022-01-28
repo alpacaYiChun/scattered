@@ -39,38 +39,23 @@ public class PullBlogsHandler implements Handler{
             List<FollowDAO> following = dynamodbOperation.queryFollowsByUser(user);
             following.stream().forEach(f -> {
                 String friend = f.getFollowing();
-                long min = Long.MAX_VALUE;
-                long max = Long.MIN_VALUE;
-                for (long i = startSlotIndex; i <= endSlotIndex; i++) {
-                    String cacheKey = friend + "_" + i;
-                    if(redisOperation.exists(cacheKey)) {
-                    	List<byte[]> rawList = redisOperation.getBinaryList(cacheKey.getBytes());
-                        List<PostDAO> postList = rawList.stream()
-                        .map(e -> {
-							try {
-								return SerializationUtil.deserialize(e, PostDAO.class);
-							} catch (ClassNotFoundException e1) {
-								return null;
-							} catch (IOException e1) {
-								return null;
-							}
-						})
-                        .filter(e -> e!=null)
-                        .sorted((e1, e2) -> compLong(e1.getTimestamp(),e2.getTimestamp()))
-                        .collect(Collectors.toList());
-                        posts.add(postList);
-                    } else {
-                        min = Math.min(min, i);
-                        max = Math.max(max, i);                        
-                    }
-                }
-
-                if(max >= min) {
-                    long from = min * CacheConstants.INTERVAL_MILLSECONDS;
-                    long to = max * CacheConstants.INTERVAL_MILLSECONDS;
-                    List<PostDAO> cacheMissing = dynamodbOperation.queryPostsByUserAndTimeInterval(friend, from, to);
-                    cacheMissing.sort((e1, e2) -> compLong(e1.getTimestamp(), e2.getTimestamp()));
-                    posts.add(cacheMissing);       
+                if(redisOperation.exists(friend)) {
+                    List<byte[]> raw = redisOperation.getList(friend.getBytes());
+                    List<PostDAO> fromCache = raw.stream().map(e -> {
+                        try {
+                            return SerializationUtil.deserialize(e, PostDAO.class);
+                        } catch (Exception ex) {
+                            return null;
+                        }
+                    }).filter(e -> e != null)
+                            .sorted((e1, e2) -> compLong(e1.getTimestamp(), e2.getTimestamp()))
+                    .collect(Collectors.toList());
+                    posts.add(fromCache);
+                } else {
+                    List<PostDAO> fromDB = dynamodbOperation.queryPosts(friend, Map.of()).stream()
+                            .sorted((e1, e2) -> compLong(e1.getTimestamp(), e2.getTimestamp()))
+                            .collect(Collectors.toList());
+                    posts.add(fromDB);
                 }
             });
         } catch (Exception e) {

@@ -1,6 +1,5 @@
 package com.suneo.flag.lambda;
 
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,7 +29,7 @@ public class KinesisBlogProcessor implements RequestHandler<KinesisEvent, String
 	    Injector injector = Guice.createInjector(new DBModule(), new RedisClusterConfigModule());
 	    this.db = injector.getInstance(DynamodbOperation.class);
 	    this.redisOperation = injector.getInstance(RedisOperation.class);
-	    this.strategy = new NewBlogCacheStrategy();
+	    this.strategy = new AlwaysCacheStrategy();
 	}
 	
 	@Override
@@ -70,10 +69,8 @@ public class KinesisBlogProcessor implements RequestHandler<KinesisEvent, String
 	    		if (!strategy.shouldCache(postDAO)) {
 	    			continue;
 				}
-	    		long slot = postDAO.getTimestamp() / CacheConstants.INTERVAL_MILLSECONDS;
-	    		String key = postDAO.getUserId() + "_" + slot;
-	    		byte[] keyBytes = key.getBytes();
-	    		redisOperation.append(keyBytes, SerializationUtil.serialize(postDAO));
+	    		redisOperation.appendFixedLength(postDAO.getUserId().getBytes(),
+						SerializationUtil.serialize(postDAO));
 			}
 	    } catch (Exception e) {
 	    	insertToDbOK = false;
@@ -82,15 +79,10 @@ public class KinesisBlogProcessor implements RequestHandler<KinesisEvent, String
 		return String.format("GoodJson %d, badJson %d, inserted: %b", goodJson, badJson, insertToDbOK);
 	}
 
-	private static class NewBlogCacheStrategy implements CacheStrategy<PostDAO> {
-		private static long FOUR_HOUR = 4 * 60 * 60 * 1000;
-
+	private static class AlwaysCacheStrategy implements CacheStrategy<PostDAO> {
 		@Override
 		public boolean shouldCache(PostDAO item) {
-			long now = System.currentTimeMillis();
-			long blogTime = item.getTimestamp();
-			long gap = now - blogTime;
-			return gap <= FOUR_HOUR;
+			return true;
 		}
 	}
 }
