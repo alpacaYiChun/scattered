@@ -1,14 +1,19 @@
 package com.suneo.flag.cache;
 
+import redis.clients.jedis.HostAndPort;
 import redis.clients.jedis.JedisCluster;
+import redis.clients.jedis.JedisPoolConfig;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 public class RedisOperation {
     private final JedisCluster cluster;
@@ -21,22 +26,12 @@ public class RedisOperation {
         try {
             this.appendFixedLenListScript = Files.readString(Path.of("scripts/fixed_len_list_append.lua"));
         } catch (IOException e) {
-            this.appendFixedLenListScript = "local num = redis.call('llen', KEYS[1]);\n" +
-                    "local limit = tonumber(ARGV[2])\n" +
-                    "if num >= limit then\n" +
-                    "\tredis.call('lpop', KEYS[1])\n" +
-                    "end\n" +
-                    "redis.call('rpush', KEYS[1], ARGV[1])\n" +
-                    "return redis.call('llen', KEYS[1])";
+        	e.printStackTrace();
         }
         try {
             this.setFullListScript = Files.readString(Path.of("scripts/set_full_list.lua"));
         }  catch(IOException e) {
-            this.setFullListScript = "local len = tonumber(ARGV[1])\n" +
-                    "for i = 2, len + 1\n" +
-                    "do\n" +
-                    "\tredis.call('rpush', KEYS[1], ARGV[i])\n" +
-                    "end";
+        	e.printStackTrace();
         }
     }
 
@@ -65,19 +60,52 @@ public class RedisOperation {
     }
 
     public void appendFixedLength(byte[] key, byte[] value) {
-        cluster.eval(appendFixedLenListScript.getBytes(), Collections.singletonList(key), List.of(value, "10".getBytes()));
+    	appendFixedLength(key, value, 30);
+    }
+    
+    public void appendFixedLength(byte[] key, byte[] value, int expire) {
+        cluster.eval(appendFixedLenListScript.getBytes(),
+        		Collections.singletonList(key), List.of(value, "10".getBytes(), (expire+"").getBytes()));
     }
 
     public void setFullList(byte[] key, int len, List<byte[]> values) {
-        List<byte[]> toUse = new ArrayList<>(values.size() + 1);
+    	setFullList(key, len, values, 30);
+    }
+    
+    public void setFullList(byte[] key, int len, List<byte[]> values, int expire) {
+        List<byte[]> toUse = new ArrayList<>(values.size() + 2);
         toUse.add((values.size()+"").getBytes());
+        toUse.add((expire+"").getBytes());
         for(byte[] value: values) {
             toUse.add(value);
         }
         cluster.eval(setFullListScript.getBytes(), Collections.singletonList(key), toUse);
     }
 
-    public static void main() {
-
+    public static void main(String[] args) {
+    	Set<HostAndPort> hostAndPorts = ImmutableSet.of(new HostAndPort("127.0.0.1", 6379));
+    	JedisPoolConfig jedisPoolConfig = new JedisPoolConfig();
+        jedisPoolConfig.setMaxIdle(10);
+        jedisPoolConfig.setMaxWaitMillis(100);
+        jedisPoolConfig.setMaxTotal(10);
+        jedisPoolConfig.setMinIdle(0);
+        JedisCluster cluster = new JedisCluster(hostAndPorts, 100, jedisPoolConfig);
+        
+        RedisOperation op = new RedisOperation(cluster);
+        byte[] key = "xiaodai".getBytes();
+        List<byte[]> values = ImmutableList.of("fuck1".getBytes(),"fuck2".getBytes());
+        op.setFullList(key, 2, values, 30);
+        
+        for(byte[] value : op.getList(key)) {
+        	System.out.println(new String(value));
+        }
+        
+        for(int i=3;i<=11;i++) {
+        	op.appendFixedLength(key, ("meimei"+i).getBytes(), 30);
+        }
+        
+        for(byte[] value : op.getList(key)) {
+        	System.out.println(new String(value));
+        }
     }
 }
