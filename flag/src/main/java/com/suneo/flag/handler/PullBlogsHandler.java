@@ -1,6 +1,5 @@
 package com.suneo.flag.handler;
 
-import com.suneo.flag.cache.CacheConstants;
 import com.suneo.flag.cache.RedisOperation;
 import com.suneo.flag.db.dao.FollowDAO;
 import com.suneo.flag.db.dao.PostDAO;
@@ -9,6 +8,7 @@ import com.suneo.flag.lib.MergeIterator;
 import com.suneo.flag.lib.SerializationUtil;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Configuration;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Configuration
 public class PullBlogsHandler implements Handler{
     @Autowired
     private DynamodbOperation dynamodbOperation;
@@ -25,12 +26,6 @@ public class PullBlogsHandler implements Handler{
 
     @Override
     public Map<String, Object> handle(Map<String, Object> params) {
-        long end = (Long)params.get(Constants.END_TIMESTAMP);
-        long start = (Long)params.get(Constants.START_TIMESTAMP);
-
-        long startSlotIndex = start / CacheConstants.INTERVAL_MILLSECONDS;
-        long endSlotIndex = end / CacheConstants.INTERVAL_MILLSECONDS;
-
         String user = String.valueOf(params.get(Constants.USER_NAME));
 
         List<List<PostDAO>> posts = new ArrayList<>();
@@ -79,9 +74,7 @@ public class PullBlogsHandler implements Handler{
 
     @Override
     public boolean valid(Map<String, Object> params) {
-        return params.containsKey(Constants.USER_NAME)
-                && params.containsKey(Constants.START_TIMESTAMP)
-                && params.containsKey(Constants.END_TIMESTAMP);
+        return params.containsKey(Constants.USER_NAME);
     }
     
     private int compLong(long a1, long a2) {

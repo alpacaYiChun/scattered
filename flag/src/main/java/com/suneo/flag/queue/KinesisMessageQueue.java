@@ -10,10 +10,8 @@ import com.amazonaws.services.kinesis.model.PutRecordResult;
 public class KinesisMessageQueue {
     private AmazonKinesis kinesis;
     
-    public KinesisMessageQueue() {
-    	AmazonKinesisClientBuilder builder = AmazonKinesisClientBuilder.standard()
-    			.withRegion("us-west-2");
-    	this.kinesis = builder.build();
+    public KinesisMessageQueue(AmazonKinesis kinesis) {
+    	this.kinesis = kinesis;
     }
     
     public String sendMessage(String streamName, String partitionKey, String data) {
@@ -29,7 +27,8 @@ public class KinesisMessageQueue {
     
     public static void main(String[] args) throws InterruptedException {
     	String streamName = "SuneoStream";
-    	KinesisMessageQueue queue = new KinesisMessageQueue();
+    	KinesisMessageQueue queue = new KinesisMessageQueue(AmazonKinesisClientBuilder.standard()
+    			.withRegion("us-west-2").build());
     	
     	//String userId = "Alpaca";
     	//String content = "Fang Yang";
