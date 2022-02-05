@@ -9,12 +9,12 @@ import java.util.stream.Collectors;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
+import com.amazonaws.services.dynamodbv2.model.Condition;
+import com.amazonaws.services.dynamodbv2.model.Select;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.suneo.flag.db.dao.CommentDAO;
-import com.suneo.flag.db.dao.FollowDAO;
-import com.suneo.flag.db.dao.PostDAO;
-import com.suneo.flag.db.dao.UserDAO;
+import com.suneo.flag.db.dao.*;
 import com.suneo.flag.db.module.DBModule;
 
 public class DynamodbOperation {
@@ -180,6 +180,54 @@ public class DynamodbOperation {
     	mapper.batchSave(follows);
     }
 
+    public boolean existsLike(String postId, String userId) {
+		Map<String, AttributeValue> valueMapping = new HashMap<>();
+		valueMapping.put("v_post_id", new AttributeValue().withS(postId));
+		valueMapping.put("v_user_id", new AttributeValue().withS(userId));
+        DynamoDBQueryExpression<LikeDAO> expression = new DynamoDBQueryExpression<LikeDAO>()
+				.withKeyConditionExpression("PostId=:v_post_id and UserId=:v_user_id")
+				.withExpressionAttributeValues(valueMapping);
+
+        return mapper.count(LikeDAO.class, expression) > 0;
+	}
+
+    public void insertLikes(List<LikeDAO> likes) {
+        mapper.batchSave(likes);
+	}
+
+	public int countDeltaLikes(String postId, long cutoff) {
+		Map<String, AttributeValue> valueMapping = new HashMap<>();
+		valueMapping.put("v_start", new AttributeValue().withN(Long.valueOf(cutoff).toString()));
+		valueMapping.put("v_post_id", new AttributeValue().withS(postId));
+
+		DynamoDBQueryExpression<LikeDAO> expression = new DynamoDBQueryExpression<LikeDAO>()
+				.withIndexName("PostId-TS-index")
+				.withKeyConditionExpression("TS >= :v_start and PostId = :v_post_id")
+				.withExpressionAttributeValues(valueMapping)
+				.withConsistentRead(false);
+
+        int count = mapper.count(LikeDAO.class, expression);
+
+        return count;
+	}
+
+	public int getBaseCount(String postId) {
+		LikeCountDAO likeCountDAO = new LikeCountDAO();
+		likeCountDAO.setPostId(postId);
+		try {
+			likeCountDAO = mapper.load(likeCountDAO);
+		} catch (Exception e) {
+			likeCountDAO = null;
+		}
+
+		return likeCountDAO == null? 0 : likeCountDAO.getLikeCount();
+	}
+
+	public void writeBaseCount(String postId, int likeCount) {
+		LikeCountDAO likeCountDAO = new LikeCountDAO(postId, likeCount);
+		mapper.save(likeCountDAO);
+	}
+
     // Below are tests
 
     public void testInsertPost() {
@@ -262,7 +310,13 @@ public class DynamodbOperation {
     	queryFollowsByUser("Nobita").stream().forEach(e->System.out.println(e.toString()));
     	queryFollowsByUser("Suneo").stream().forEach(e->System.out.println(e.toString()));
     }
-    
+
+    public void testRepeatLike() {
+		LikeDAO m1 = new LikeDAO("post1","user1", 1000);
+		LikeDAO m2 = new LikeDAO("post1", "user1", 2000);
+		insertLikes(List.of(m1, m2));
+	}
+
 	public static void main(String[] args) {
 		Injector injector = Guice.createInjector(new DBModule());
         DynamodbOperation operation = injector.getInstance(DynamodbOperation.class);
@@ -278,5 +332,7 @@ public class DynamodbOperation {
         
         //operation.testInsertComment();
         //operation.testQueryComment();
+
+		operation.testRepeatLike();
 	}
 }
