@@ -78,7 +78,7 @@ public class LikeConsumerWorker extends AbstractConsumerWorker<String, String> i
 		for(Map.Entry<String, HashSet<String>> e : aggragate.entrySet()) {
 			String postId = e.getKey();
 			for(String userId : e.getValue()) {
-				if(!dynamodbOperation.existsLike(postId, userId)) {
+				if(dynamodbOperation.existsLike(postId, userId)) {
 					continue;
 				}
 				validated.add(new LikeDAO(postId, userId, System.currentTimeMillis()));
