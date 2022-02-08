@@ -325,7 +325,7 @@ public class DynamodbOperation {
         //operation.testQueryPost();
         
         //operation.testInsertUser();
-        operation.testQueryUser();
+        //operation.testQueryUser();
         
         //operation.testInsertFollow();
         //operation.testQueryFollow();
