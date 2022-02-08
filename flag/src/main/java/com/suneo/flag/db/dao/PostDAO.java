@@ -9,6 +9,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -19,9 +20,11 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @DynamoDBTable(tableName = "Post")
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class PostDAO implements Serializable {	
 	private static final long serialVersionUID = -3089343982761308487L;
 
+	@EqualsAndHashCode.Include
 	@DynamoDBHashKey(attributeName = "PostId")
     private String id;
 	

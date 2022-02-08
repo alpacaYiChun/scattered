@@ -8,6 +8,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -17,10 +18,12 @@ import lombok.Setter;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @DynamoDBTable(tableName = "Comment")
 public class CommentDAO implements Serializable {
 	private static final long serialVersionUID = 1787065760497761216L;
 
+	@EqualsAndHashCode.Include
 	@DynamoDBHashKey(attributeName = "CommentId")
     private String commentId;
 	

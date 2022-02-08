@@ -8,6 +8,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -17,13 +18,16 @@ import lombok.Setter;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @DynamoDBTable(tableName = "Follow")
 public class FollowDAO implements Serializable {
 	private static final long serialVersionUID = 4197931055173082946L;
 
+	@EqualsAndHashCode.Include
 	@DynamoDBHashKey(attributeName = "UserId")
     private String userId;
 	
+	@EqualsAndHashCode.Include
 	@DynamoDBAttribute(attributeName = "Following")
     private String following;
     	

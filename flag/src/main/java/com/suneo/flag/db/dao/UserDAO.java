@@ -8,6 +8,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -18,9 +19,11 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @DynamoDBTable(tableName="User")
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class UserDAO implements Serializable {
 	private static final long serialVersionUID = 8821549867458892517L;
 
+	@EqualsAndHashCode.Include
 	@DynamoDBHashKey(attributeName = "UserId")
     private String userId;
 	

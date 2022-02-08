@@ -46,7 +46,34 @@ public class RedisOperation {
     public String set(String key, String value) {
     	return cluster.set(key, value);
     }
-
+    
+    public List<String> getList(String key) {
+    	return cluster.lrange(key, 0, -1);
+    }
+    
+    public void setFullList(String key, int len, List<String> values) {
+    	setFullList(key, len, values, 30);
+    }
+    
+    public void setFullList(String key, int len, List<String> values, int expire) {
+        List<String> toUse = new ArrayList<>(values.size() + 2);
+        toUse.add((values.size()+""));
+        toUse.add((expire+""));
+        for(String value: values) {
+            toUse.add(value);
+        }
+        cluster.eval(setFullListScript, Collections.singletonList(key), toUse);
+    }
+    
+    public void appendFixedLength(String key, String value) {
+    	appendFixedLength(key, value, 30);
+    }
+    
+    public void appendFixedLength(String key, String value, int expire) {
+    	cluster.eval(appendFixedLenListScript,
+        		Collections.singletonList(key), List.of(value, "10", expire+""));
+    }
+    
     public byte[] get(byte[] key) {
         return cluster.get(key);
     }

@@ -10,11 +10,14 @@ import lombok.*;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @DynamoDBTable(tableName = "Like")
 public class LikeDAO {
+	@EqualsAndHashCode.Include
     @DynamoDBHashKey(attributeName = "PostId")
     private String postId;
 
+	@EqualsAndHashCode.Include
     @DynamoDBAttribute(attributeName = "UserId")
     private String userId;
 

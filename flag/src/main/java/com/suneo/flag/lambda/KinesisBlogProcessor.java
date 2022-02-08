@@ -3,7 +3,6 @@ package com.suneo.flag.lambda;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.suneo.flag.cache.CacheConstants;
 import com.suneo.flag.cache.CacheStrategy;
 import com.suneo.flag.cache.RedisOperation;
 import com.suneo.flag.cache.module.RedisClusterConfigModule;
@@ -65,18 +64,23 @@ public class KinesisBlogProcessor implements RequestHandler<KinesisEvent, String
 	    boolean insertToDbOK = true;
 	    try {
 	    	db.insertPosts(list);
-	    	for(PostDAO postDAO : list) {
-	    		if (!strategy.shouldCache(postDAO)) {
-	    			continue;
-				}
-	    		redisOperation.appendFixedLength(postDAO.getUserId().getBytes(),
-						SerializationUtil.serialize(postDAO));
-			}
 	    } catch (Exception e) {
 	    	insertToDbOK = false;
 	    }
 	    
-		return String.format("GoodJson %d, badJson %d, inserted: %b", goodJson, badJson, insertToDbOK);
+	    boolean insertToCacheOK = true;
+	    try {
+	    	for(PostDAO postDAO : list) {
+	    		if (!strategy.shouldCache(postDAO)) {
+	    			continue;
+				}
+	    		redisOperation.appendFixedLength(postDAO.getUserId(), postDAO.getId());
+			}
+	    } catch (Exception e) {
+	    	insertToCacheOK = false;
+	    }
+	    
+		return String.format("GoodJson %d, badJson %d, inserted DB: %b, insertedCache: %b", goodJson, badJson, insertToDbOK, insertToCacheOK);
 	}
 
 	private static class AlwaysCacheStrategy implements CacheStrategy<PostDAO> {

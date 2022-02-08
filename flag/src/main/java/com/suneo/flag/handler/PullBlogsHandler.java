@@ -35,10 +35,11 @@ public class PullBlogsHandler implements Handler{
             following.stream().forEach(f -> {
                 String friend = f.getFollowing();
                 if(redisOperation.exists(friend)) {
-                    List<byte[]> raw = redisOperation.getList(friend.getBytes());
-                    List<PostDAO> fromCache = raw.stream().map(e -> {
+                	// List of PostIDs
+                    List<String> ids = redisOperation.getList(friend);
+                    List<PostDAO> fromCache = ids.stream().map(id -> {
                         try {
-                            return SerializationUtil.deserialize(e, PostDAO.class);
+                            return dynamodbOperation.loadPost(id);
                         } catch (Exception ex) {
                             return null;
                         }
@@ -47,20 +48,19 @@ public class PullBlogsHandler implements Handler{
                     .collect(Collectors.toList());
                     posts.add(fromCache);
                 } else {
+                	// Read DB
                     List<PostDAO> fromDB = dynamodbOperation.queryPosts(friend, Map.of()).stream()
                             .sorted((e1, e2) -> compLong(e1.getTimestamp(), e2.getTimestamp()))
                             .collect(Collectors.toList());
+                    
+                    // Write Cache
+                    List<String> postIds = fromDB.stream()
+                    		.map(post -> post.getId())
+                    		.collect(Collectors.toList());
+                    redisOperation.setFullList(friend, postIds.size(), postIds);
+                    
+                    // Collect Result
                     posts.add(fromDB);
-                    List<byte[]> bytesOfPosts = fromDB.stream()
-                            .map(e -> {
-                                try {
-                                    return SerializationUtil.serialize(e);
-                                } catch (IOException ioException) {
-                                    return null;
-                                }
-                            })
-                            .collect(Collectors.toList());
-                    redisOperation.setFullList(friend.getBytes(), fromDB.size(), bytesOfPosts);
                 }
             });
         } catch (Exception e) {

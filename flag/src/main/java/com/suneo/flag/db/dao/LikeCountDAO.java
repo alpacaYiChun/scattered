@@ -10,8 +10,10 @@ import lombok.*;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @DynamoDBTable(tableName = "LikeCountLambdaMode")
 public class LikeCountDAO {
+	@EqualsAndHashCode.Include
     @DynamoDBHashKey(attributeName = "PostId")
     private String postId;
 
