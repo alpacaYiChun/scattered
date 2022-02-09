@@ -11,7 +11,7 @@ import org.springframework.context.annotation.Configuration;
 public class DBBean {
     @Bean
     public DynamoDBMapper getDynamodbMapper() {
-        AmazonDynamoDB client = AmazonDynamoDBClientBuilder.standard().build();
+        AmazonDynamoDB client = AmazonDynamoDBClientBuilder.standard().withRegion("us-west-2").build();
         return new DynamoDBMapper(client);
     }
 

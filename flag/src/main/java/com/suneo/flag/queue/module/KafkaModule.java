@@ -21,8 +21,9 @@ public class KafkaModule extends AbstractModule {
     @Provides
     @Singleton
     public KafkaProducer<String, String> likeProducer() {
+        String address = System.getenv("ALPACA_ADDR");
         Properties properties = new Properties();
-        properties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "35.80.15.33:9092");
+        properties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, address);
         properties.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
                 "org.apache.kafka.common.serialization.StringSerializer");
         properties.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
@@ -33,8 +34,10 @@ public class KafkaModule extends AbstractModule {
     @Provides
     @Singleton
     public KafkaConsumer<String, String> likeConsumer() {
+        String address = System.getenv("ALPACA_ADDR");
+        String topic = System.getenv("ALPACA_TOPIC");
         Properties properties = new Properties();
-        properties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "35.80.15.33:9092");
+        properties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, address);
         properties.setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
                 "org.apache.kafka.common.serialization.StringDeserializer");
         properties.setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
@@ -42,7 +45,7 @@ public class KafkaModule extends AbstractModule {
         properties.setProperty(ConsumerConfig.GROUP_ID_CONFIG, "likeGroup");
         KafkaConsumer<String, String> consumer = new KafkaConsumer<>(properties);
 
-        consumer.subscribe(Collections.singletonList("like"));
+        consumer.subscribe(Collections.singletonList(topic));
 
         return consumer;
     }

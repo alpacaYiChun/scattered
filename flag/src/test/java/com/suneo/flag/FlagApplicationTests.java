@@ -1,13 +1,10 @@
 package com.suneo.flag;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
-class FlagApplicationTests {
-
+public class FlagApplicationTests {
 	@Test
-	void contextLoads() {
+	public void astana() {
+		System.out.println("Welcome to Kazakstan!");
 	}
-
 }
