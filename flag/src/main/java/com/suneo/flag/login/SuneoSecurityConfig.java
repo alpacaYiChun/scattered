@@ -14,16 +14,19 @@ public class SuneoSecurityConfig extends WebSecurityConfigurerAdapter{
     @Autowired
     private PasswordEncoder encoder;
     
-    @Autowired
-    private UserDetailsServiceImpl userDetailsService;
+    //@Autowired
+    //private UserDetailsServiceImpl userDetailsService;
     
-    @Override
-    public void configure(AuthenticationManagerBuilder auth) throws Exception {
-    	auth.userDetailsService(userDetailsService).passwordEncoder(encoder);
-    }
+    //@Override
+    //public void configure(AuthenticationManagerBuilder auth) throws Exception {
+    	//auth.userDetailsService(userDetailsService).passwordEncoder(encoder);
+    //}
     
     @Override
     public void configure(HttpSecurity http) throws Exception {
+        http.authorizeRequests().anyRequest().permitAll();
+        http.cors().and().csrf().disable();
+    	/*
         http.authorizeRequests((authorize) -> authorize
                 .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
                 .anyRequest().permitAll()
@@ -36,5 +39,6 @@ public class SuneoSecurityConfig extends WebSecurityConfigurerAdapter{
                 .rememberMeCookieName("suneo-alpaca-cookie")
                 .key("suneo-alpaca-key")
                 .tokenValiditySeconds(3600 * 12));
+          */      
     }
 }

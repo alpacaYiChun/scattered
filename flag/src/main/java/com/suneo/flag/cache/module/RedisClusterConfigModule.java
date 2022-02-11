@@ -16,8 +16,9 @@ public class RedisClusterConfigModule extends AbstractModule {
     @Provides
     @Singleton
     public JedisCluster getRedisCluster() {
+    	String hostsandPorts = System.getenv("REDIS_HOST_PORT");
         Set<HostAndPort> hostAndPorts = new HashSet<>();
-        Arrays.asList("".split(",")).stream().forEach(e->{
+        Arrays.asList(hostsandPorts.split(",")).stream().forEach(e->{
             String[] parts = e.split(":");
             String host = parts[0];
             int port = Integer.parseInt(parts[1]);

@@ -24,12 +24,12 @@ public class RedisOperation {
     public RedisOperation(JedisCluster cluster) {
         this.cluster = cluster;
         try {
-            this.appendFixedLenListScript = Files.readString(Path.of("scripts/fixed_len_list_append.lua"));
+            this.appendFixedLenListScript = Files.readString(Path.of("fixed_len_list_append.lua"));
         } catch (IOException e) {
         	e.printStackTrace();
         }
         try {
-            this.setFullListScript = Files.readString(Path.of("scripts/set_full_list.lua"));
+            this.setFullListScript = Files.readString(Path.of("set_full_list.lua"));
         }  catch(IOException e) {
         	e.printStackTrace();
         }

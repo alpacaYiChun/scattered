@@ -4,6 +4,7 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -12,11 +13,14 @@ import java.util.Properties;
 
 @Configuration
 public class KafkaBean {
+	@Value("${kafka.cluster.addr}")
+	private String kafkaAddress;
+	
     @Bean
     @Qualifier("like")
     public KafkaProducer<String, String> likeProducer() {
         Properties properties = new Properties();
-        properties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "35.80.15.33:9092");
+        properties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaAddress);
         properties.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
                 "org.apache.kafka.common.serialization.StringSerializer");
         properties.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
@@ -28,7 +32,7 @@ public class KafkaBean {
     @Qualifier("like")
     public KafkaConsumer<String, String> likeConsumer() {
         Properties properties = new Properties();
-        properties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "35.80.15.33:9092");
+        properties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaAddress);
         properties.setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
                 "org.apache.kafka.common.serialization.StringDeserializer");
         properties.setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
