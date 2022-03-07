@@ -7,10 +7,7 @@ import redis.clients.jedis.JedisPoolConfig;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -107,6 +104,27 @@ public class RedisOperation {
             toUse.add(value);
         }
         cluster.eval(setFullListScript.getBytes(), Collections.singletonList(key), toUse);
+    }
+
+    public Map<String, String> getMultiKeys(String[] keys) {
+        List<String> attempt = cluster.mget(keys);
+        Map<String, String> ret = new HashMap<>();
+        for(int i = 0; i < attempt.size(); i++) {
+            if(attempt.get(i) != null) {
+                ret.put(keys[i], attempt.get(i));
+            }
+        }
+        return ret;
+    }
+
+    public void putMultiKeys(Map<String, String> kvs) {
+        String[] kvsArray = new String[kvs.size() * 2];
+        int i = 0;
+        for(Map.Entry<String, String> e : kvs.entrySet()) {
+            kvsArray[i++] = e.getKey();
+            kvsArray[i++] = e.getValue();
+        }
+        cluster.mset(kvsArray);
     }
 
     public static void main(String[] args) {
