@@ -3,13 +3,14 @@ package com.suneo.flag.queue.module;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.google.inject.name.Named;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Properties;
 
 public class KafkaModule extends AbstractModule {
@@ -33,7 +34,7 @@ public class KafkaModule extends AbstractModule {
 
     @Provides
     @Singleton
-    public KafkaConsumer<String, String> likeConsumer() {
+    public List<KafkaConsumer<String, String>> likeConsumer() {
         String address = System.getenv("ALPACA_ADDR");
         String topic = System.getenv("ALPACA_TOPIC");
         Properties properties = new Properties();
@@ -43,10 +44,16 @@ public class KafkaModule extends AbstractModule {
         properties.setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
                 "org.apache.kafka.common.serialization.StringDeserializer");
         properties.setProperty(ConsumerConfig.GROUP_ID_CONFIG, "likeGroup");
-        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(properties);
+        
 
-        consumer.subscribe(Collections.singletonList(topic));
-
-        return consumer;
+        int consumerNum = Integer.parseInt(System.getenv("PARTITION_NUM"));
+        List<KafkaConsumer<String, String>> ret = new ArrayList<>(consumerNum);
+        for (int i = 0; i < consumerNum; i++) {
+        	KafkaConsumer<String, String> consumer = new KafkaConsumer<>(properties);
+        	consumer.subscribe(Collections.singletonList(topic));
+        	ret.add(consumer);
+        }
+        
+        return ret;
     }
 }

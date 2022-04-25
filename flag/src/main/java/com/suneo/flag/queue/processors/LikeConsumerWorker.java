@@ -5,10 +5,10 @@ import com.suneo.flag.db.operation.DynamodbOperation;
 import com.suneo.flag.queue.module.KafkaModule;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -17,7 +17,7 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 
 public class LikeConsumerWorker extends AbstractConsumerWorker<String, String> implements Runnable{
     private final DynamodbOperation dynamodbOperation;
-    private final HashMap<String, HashSet<String>> aggragate = new HashMap<>();
+    private final Map<String, HashSet<String>> aggragate = new ConcurrentHashMap<>();
 
     public LikeConsumerWorker(KafkaConsumer<String, String> kafkaConsumer,
                               DynamodbOperation dynamodbOperation) {
@@ -29,9 +29,7 @@ public class LikeConsumerWorker extends AbstractConsumerWorker<String, String> i
     public int process(ConsumerRecord<String, String> record) {
         String postId = record.key();
         String userId = record.value();
-        if(!aggragate.containsKey(postId)) {
-        	aggragate.put(postId, new HashSet<String>());
-        }
+        aggragate.putIfAbsent(postId, new HashSet<String>());
         aggragate.get(postId).add(userId);
         
         System.out.println(String.format("Key=%s, Topic=%s, Partition=%d, Msg=%s",
@@ -54,7 +52,7 @@ public class LikeConsumerWorker extends AbstractConsumerWorker<String, String> i
 
     public static void main(String[] args) throws InterruptedException {
         KafkaProducer<String, String> producer = new KafkaModule().likeProducer();
-        KafkaConsumer<String, String> consumer = new KafkaModule().likeConsumer();
+        KafkaConsumer<String, String> consumer = new KafkaModule().likeConsumer().get(0);
         Runnable t = new Runnable() {
             @Override
             public void run() {

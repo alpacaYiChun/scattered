@@ -4,6 +4,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -34,7 +35,7 @@ public abstract class AbstractConsumerWorker<K, V> {
     public void doWork() {
         while(true) {
         	prepare();
-            ConsumerRecords<K, V> records = kafkaConsumer.poll(1000);
+            ConsumerRecords<K, V> records = kafkaConsumer.poll(Duration.ofMillis(1000));
             if(!records.isEmpty()) {
                 List<ConsumerRecord<K, V>> listOfRecord = new ArrayList<>(records.count());
                 Iterator<ConsumerRecord<K,V>> iter = records.iterator();

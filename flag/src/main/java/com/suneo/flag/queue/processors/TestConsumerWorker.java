@@ -44,7 +44,7 @@ public class TestConsumerWorker extends AbstractConsumerWorker<String, String> {
             int n = Integer.parseInt(args[1]);
             Thread[] threads = new Thread[n];
             for(int i=0;i<n;i++) {
-                KafkaConsumer<String, String> consumer = module.likeConsumer();
+                KafkaConsumer<String, String> consumer = module.likeConsumer().get(0);
                 TestConsumerWorker worker = new TestConsumerWorker(consumer);
                 Thread t = new Thread (() -> worker.doWork());
                 threads[i] = t;
