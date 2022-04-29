@@ -8,7 +8,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Properties;
 
 @Configuration
@@ -30,7 +32,7 @@ public class KafkaBean {
 
     @Bean
     @Qualifier("like")
-    public KafkaConsumer<String, String> likeConsumer() {
+    public List<KafkaConsumer<String, String>> likeConsumer() {
         Properties properties = new Properties();
         properties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaAddress);
         properties.setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
@@ -38,10 +40,16 @@ public class KafkaBean {
         properties.setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
                 "org.apache.kafka.common.serialization.StringDeserializer");
         properties.setProperty(ConsumerConfig.GROUP_ID_CONFIG, "likeGroup");
-        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(properties);
 
-        consumer.subscribe(Collections.singletonList("like"));
+        int consumerNum = Integer.parseInt(System.getenv("PARTITION_NUM"));
 
-        return consumer;
+        List<KafkaConsumer<String, String>> ret = new ArrayList<>();
+
+        for(int i=0;i<consumerNum;i++) {
+            KafkaConsumer<String, String> consumer = new KafkaConsumer<>(properties);
+            consumer.subscribe(Collections.singletonList("like"));
+            ret.add(consumer);
+        }
+        return ret;
     }
 }
