@@ -78,19 +78,22 @@ public class PullBlogsHandler implements Handler{
                     List<PostDAO> fromDB = dynamodbOperation.queryPosts(friend, Map.of()).stream()
                             .sorted((e1, e2) -> compLong(e1.getTimestamp(), e2.getTimestamp()))
                             .collect(Collectors.toList());
-                    
-                    // Write Timeline Cache
-                    List<String> postIds = fromDB.stream()
-                    		.map(post -> post.getId())
-                    		.collect(Collectors.toList());
-                    redisOperation.setFullList(friend, postIds.size(), postIds);
 
-                    // Write Content Cache
-                    Map<String, String> createMap = new HashMap<>();
-                    for(PostDAO post : fromDB) {
-                        createMap.put(post.getId(), toJson(post));
+                    // sanity check, if other thead has already done this, refrain from doing so again
+                    if(!redisOperation.exists(friend)) {
+                        // Write Timeline Cache
+                        List<String> postIds = fromDB.stream()
+                                .map(post -> post.getId())
+                                .collect(Collectors.toList());
+                        redisOperation.setFullList(friend, postIds.size(), postIds);
+
+                        // Write Content Cache
+                        Map<String, String> createMap = new HashMap<>();
+                        for (PostDAO post : fromDB) {
+                            createMap.put(post.getId(), toJson(post));
+                        }
+                        redisOperation.putMultiKeys(createMap);
                     }
-                    redisOperation.putMultiKeys(createMap);
 
                     // Collect Result
                     posts.add(fromDB);
