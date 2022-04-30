@@ -1,5 +1,6 @@
 package com.suneo.flag.queue.processors;
 
+import com.suneo.flag.cache.RedisOperation;
 import com.suneo.flag.db.dao.LikeDAO;
 import com.suneo.flag.db.operation.DynamodbOperation;
 import com.suneo.flag.queue.module.KafkaModule;
@@ -17,20 +18,25 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 
 public class LikeConsumerWorker extends AbstractConsumerWorker<String, String> implements Runnable{
     private final DynamodbOperation dynamodbOperation;
-    private final Map<String, HashSet<String>> aggragate = new ConcurrentHashMap<>();
+
+    private final RedisOperation redisOperation;
+
+    private final Map<String, HashSet<String>> aggregate = new ConcurrentHashMap<>();
 
     public LikeConsumerWorker(KafkaConsumer<String, String> kafkaConsumer,
+                              RedisOperation redisOperation,
                               DynamodbOperation dynamodbOperation) {
         super(kafkaConsumer, false);
         this.dynamodbOperation = dynamodbOperation;
+        this.redisOperation = redisOperation;
     }
 
     @Override
     public int process(ConsumerRecord<String, String> record) {
         String postId = record.key();
         String userId = record.value();
-        aggragate.putIfAbsent(postId, new HashSet<String>());
-        aggragate.get(postId).add(userId);
+        aggregate.putIfAbsent(postId, new HashSet<String>());
+        aggregate.get(postId).add(userId);
         
         System.out.println(String.format("Key=%s, Topic=%s, Partition=%d, Msg=%s",
                 record.key(),
@@ -61,7 +67,7 @@ public class LikeConsumerWorker extends AbstractConsumerWorker<String, String> i
                 }
             }
         };
-        LikeConsumerWorker sideCar = new LikeConsumerWorker(consumer, null);
+        LikeConsumerWorker sideCar = new LikeConsumerWorker(consumer, null, null);
         Thread p = new Thread(t);
         Thread c = new Thread(sideCar);
         p.start();
@@ -73,22 +79,37 @@ public class LikeConsumerWorker extends AbstractConsumerWorker<String, String> i
 	@Override
 	public int postProcess() {
 		List<LikeDAO> validated = new ArrayList<LikeDAO>();
-		for(Map.Entry<String, HashSet<String>> e : aggragate.entrySet()) {
+        List<String> postIds = new ArrayList<>();
+        List<Integer> sizes = new ArrayList<>();
+
+		for(Map.Entry<String, HashSet<String>> e : aggregate.entrySet()) {
 			String postId = e.getKey();
+            postIds.add(postId);
+            int size = 0;
 			for(String userId : e.getValue()) {
 				if(dynamodbOperation.existsLike(postId, userId)) {
 					continue;
 				}
+                ++size;
 				validated.add(new LikeDAO(postId, userId, System.currentTimeMillis()));
+                if(validated.size() >= 100) {
+                    dynamodbOperation.insertLikes(validated);
+                    validated.clear();
+                }
 			}
+            sizes.add(size);
 		}
+
 		dynamodbOperation.insertLikes(validated);
+
+        redisOperation.incKeysBy(postIds, sizes, 3000);
+
 		return 0;
 	}
 
 	@Override
 	public int prepare() {
-		aggragate.clear();
+		aggregate.clear();
 		return 0;
 	}
 }

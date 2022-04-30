@@ -17,6 +17,7 @@ public class RedisOperation {
 
     private String appendFixedLenListScript;
     private String setFullListScript;
+    private String incrKeysScript;
 
     public RedisOperation(JedisCluster cluster) {
         this.cluster = cluster;
@@ -29,6 +30,11 @@ public class RedisOperation {
             this.setFullListScript = Files.readString(Path.of("set_full_list.lua"));
         }  catch(IOException e) {
         	e.printStackTrace();
+        }
+        try {
+            this.incrKeysScript = Files.readString(Path.of("incr_keys_by.lua"));
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -60,6 +66,16 @@ public class RedisOperation {
             toUse.add(value);
         }
         cluster.eval(setFullListScript, Collections.singletonList(key), toUse);
+    }
+
+    public void incKeysBy(List<String> keys, List<Integer> values, int expire) {
+        List<String> params = new ArrayList<>();
+        params.add(values.size()+"");
+        params.add(expire+"");
+        for(Integer val : values) {
+            params.add(val+"");
+        }
+        cluster.eval(incrKeysScript, keys, params);
     }
     
     public void appendFixedLength(String key, String value) {
