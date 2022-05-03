@@ -1,7 +1,9 @@
 package com.suneo.flag.lib;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.suneo.flag.lib.BasicQ.IAction;
 import com.suneo.flag.lib.BasicQ.IEnvironment;
@@ -33,11 +35,11 @@ public class QMatrix {
 		
 		private IRepository repository;
 		
-		public MatrixState(int x, int y, int m, int n, IRepository repository) {
-			this.x = x;
-			this.y = y;
+		public MatrixState(int m, int n, int x, int y, IRepository repository) {
 			this.m = m;
 			this.n = n;
+			this.x = x;
+			this.y = y;
 			this.repository = repository;
 		}
 		
@@ -71,20 +73,95 @@ public class QMatrix {
 		}
 		
 	}
-	
+
+	public static class MatrixRepository implements IRepository {
+		private int rows;
+		private int cols;
+		private Map<Integer, IState> stateCache = new HashMap<>();
+		private List<IAction> actionList = List.of(new MatrixAction(0), new MatrixAction(1), new MatrixAction(2), new MatrixAction(3));
+
+		public MatrixRepository(int rows, int cols) {
+			this.rows = rows;
+			this.cols = cols;
+		}
+
+		@Override
+		public IState getStateById(int id) {
+			if (stateCache.containsKey(id)) {
+				return stateCache.get(id);
+			}
+			int x = id / cols;
+			int y = id % cols;
+
+			IState create = new MatrixState(rows, cols, x, y, this);
+			stateCache.put(id, create);
+
+			return create;
+		}
+
+		@Override
+		public IAction getActionById(int id) {
+			return actionList.get(id);
+		}
+	}
+
 	public static class MatrixEnv implements IEnvironment {
+		private int[][] map;
+
+		public MatrixEnv(int[][] map) {
+			this.map = map;
+		}
+
+		public int[] getDim() {
+			return new int[]{map.length, map[0].length};
+		}
 
 		@Override
 		public double reward(IState state, IAction action) {
-			// TODO Auto-generated method stub
-			return 0;
+			IState next = state.transit(action);
+			MatrixState nextMatrixState = (MatrixState) next;
+			int x = nextMatrixState.x;
+			int y = nextMatrixState.y;
+
+			return map[x][y] - 1;
 		}
 
 		@Override
 		public boolean ternmial(IState state) {
-			// TODO Auto-generated method stub
-			return false;
+			MatrixState matrixState = (MatrixState) state;
+			int x = matrixState.x;
+			int y = matrixState.y;
+
+			return map[x][y] == 100 || map[x][y] == -100;
 		}
 		
+	}
+
+	public static void main(String[] args) {
+		int[][] map = new int[][] {
+				{0, 1,  0,     0, -1},
+				{0, -1, 1,     1,  -100},
+				{0, -1, 100,  -1, -1},
+				{0, -1, 0,     0,  0 },
+				{1,  1, 1,     1,  1}};
+
+		IEnvironment env = new MatrixEnv(map);
+		IRepository repository = new MatrixRepository(map.length, map[0].length);
+
+		IState init = new MatrixState(map.length, map[0].length, 0, 0, repository);
+
+		int epoch = 20;
+		double step = 1.0 / epoch;
+		double explore = 1.0;
+
+		for(int i=0; i<epoch; i++) {
+			BasicQ basicQ = new BasicQ(4, map[0].length * map.length, explore, init, env);
+			basicQ.qLearn();
+
+			basicQ.say();
+
+			explore -= step;
+		}
+
 	}
 }

@@ -1,5 +1,6 @@
 package com.suneo.flag.lib;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class BasicQ {
@@ -27,16 +28,20 @@ public class BasicQ {
 	
 	private double[][] qTable;
 	private double rate;
-	private double explore = 1.0;
+	private double explore;
 	
 	private IState start;
 	private IEnvironment env;
-	
-	public BasicQ(int n_actions, int n_states, IState start, IEnvironment env) {
+
+	private List<IState> trace = new ArrayList<>();
+
+	public BasicQ(int n_actions, int n_states, double explore, IState start, IEnvironment env) {
 		this.n_actions = n_actions;
 		this.qTable = new double[n_states][n_actions];
 		this.start = start;
 		this.env = env;
+		this.explore = explore;
+		this.trace.add(start);
 	}
 	
 	
@@ -69,6 +74,8 @@ public class BasicQ {
 			update(now, selected, reward);
 			
 			now = now.transit(selected);
+
+			trace.add(now);
 			
 			++round;
 		}
@@ -89,5 +96,15 @@ public class BasicQ {
 		double decided = newValue * rate + qTable[from.getId()][taken.getId()] * (1 - rate);
 		
 		qTable[from.getId()][taken.getId()] = decided;
+	}
+
+	public void say() {
+		StringBuilder sb = new StringBuilder();
+		for(IState state : trace) {
+			sb.append(state.toString());
+			sb.append("-->");
+		}
+
+		System.out.println(sb.toString());
 	}
 }
