@@ -45,7 +45,7 @@ public class KafkaModule extends AbstractModule {
                 "org.apache.kafka.common.serialization.StringDeserializer");
         properties.setProperty(ConsumerConfig.GROUP_ID_CONFIG, "likeGroup");
         
-
+        // First ship: use partition num as thread num
         int consumerNum = Integer.parseInt(System.getenv("PARTITION_NUM"));
         List<KafkaConsumer<String, String>> ret = new ArrayList<>(consumerNum);
         for (int i = 0; i < consumerNum; i++) {
