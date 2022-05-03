@@ -71,7 +71,11 @@ public class QMatrix {
 			}
 			return ret;
 		}
-		
+
+		@Override
+		public String toString() {
+			return x+","+y;
+		}
 	}
 
 	public static class MatrixRepository implements IRepository {
