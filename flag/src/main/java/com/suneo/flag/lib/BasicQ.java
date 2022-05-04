@@ -10,50 +10,47 @@ public class BasicQ {
 	
 	public static interface IState {
 		int getId();
-		IState transit(IAction action);
-		List<IAction> getAllPossibleActions();
 	}
 	
 	public static interface IEnvironment {
 		double reward(IState state, IAction action);
 		boolean ternmial(IState state);
+		IState transit(IState state, IAction action);
+		List<IAction> getAllPossibleActions(IState state);
+		void takeAction(IState state, IAction action);
 	}
 	
 	public static interface IRepository {
 		IState getStateById(int id);
 		IAction getActionById(int id);
 	}
-		
-	private int n_actions;
-	
+			
 	private double[][] qTable;
 	private double rate;
 	private double explore;
 	
-	private IState start;
-	private IEnvironment env;
-
-	private List<IState> trace = new ArrayList<>();
-
-	public BasicQ(int n_actions, int n_states, double explore, IState start, IEnvironment env) {
-		this.n_actions = n_actions;
+	public BasicQ(int n_actions, int n_states, double rate, double explore) {
 		this.qTable = new double[n_states][n_actions];
-		this.start = start;
-		this.env = env;
 		this.explore = explore;
-		this.trace.add(start);
+		this.rate = rate;
 	}
 	
 	
+	public void setExplore(double explore) {
+		this.explore = explore;
+	}
 	
-	public void qLearn() {
+	public void qLearn(IEnvironment env, IState start) {
 		IState now = start;
+		
+		List<IState> trace = new ArrayList<>();
+		trace.add(start);
 		
 		int round = 0;
 				
 		while(round < 100 && !env.ternmial(now)) {
 			double random = Math.random();
-			List<IAction> possible = now.getAllPossibleActions();
+			List<IAction> possible = env.getAllPossibleActions(now);
 			IAction selected = null;
 			if(random < explore) {
 				int size = possible.size() - 1;
@@ -61,32 +58,47 @@ public class BasicQ {
 			    selected = possible.get(index);
 			} else {
 				int maxIndex = -1;
-				for(int j=0;j<n_actions;j++) {
-					if(j == -1 && qTable[now.getId()][maxIndex] < qTable[now.getId()][j]) {
-						maxIndex = j;
+				IAction maxAction = null;
+				for(IAction action : possible) {
+					int id = action.getId();
+					if(maxIndex == -1 || qTable[now.getId()][maxIndex] < qTable[now.getId()][id]) {
+						maxIndex = id;
+						maxAction = action;
 					}
 				}
-				selected = possible.get(maxIndex);
+				selected = maxAction;
 			}
 			
 			double reward = env.reward(now, selected);
 			
-			update(now, selected, reward);
+			update(env, now, selected, reward);
 			
-			now = now.transit(selected);
+			env.takeAction(now, selected);
+
+			now = env.transit(now, selected);
 
 			trace.add(now);
 			
 			++round;
 		}
+		
+		StringBuilder sb = new StringBuilder();
+		for(IState state : trace) {
+			sb.append(state.toString());
+			sb.append("-->");
+		}
+
+		System.out.println(sb.toString());
 	}
 	
-	private void update(IState from, IAction taken, double reward) {
-		IState resultState = from.transit(taken);
+	private void update(IEnvironment env, IState from, IAction taken, double reward) {		
+		IState resultState = env.transit(from, taken);
 		int resultStateId = resultState.getId();
+		List<IAction> nextActions = env.getAllPossibleActions(resultState);
 		double max = Double.MIN_VALUE;
-		for (int j = 0; j < n_actions; j++) {
-			double tmp = qTable[resultStateId][j];
+		for (IAction action : nextActions) {
+			int id = action.getId();
+			double tmp = qTable[resultStateId][id];
 			if (tmp > max) {
 				max = tmp;
 			}
@@ -97,14 +109,13 @@ public class BasicQ {
 		
 		qTable[from.getId()][taken.getId()] = decided;
 	}
-
+	
 	public void say() {
-		StringBuilder sb = new StringBuilder();
-		for(IState state : trace) {
-			sb.append(state.toString());
-			sb.append("-->");
+		for(int i=0;i<qTable.length;i++) {
+			for(int j=0;j<qTable[0].length;j++) {
+				System.out.print(qTable[i][j]+"  ");
+			}
+			System.out.println();
 		}
-
-		System.out.println(sb.toString());
 	}
 }

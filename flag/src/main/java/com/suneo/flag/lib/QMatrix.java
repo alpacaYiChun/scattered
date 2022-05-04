@@ -30,46 +30,17 @@ public class QMatrix {
 	public static class MatrixState implements IState {
 		private int x;
 		private int y;
-		private int m;
 		private int n;
 		
-		private IRepository repository;
-		
-		public MatrixState(int m, int n, int x, int y, IRepository repository) {
-			this.m = m;
-			this.n = n;
+		public MatrixState(int x, int y, int n) {
 			this.x = x;
 			this.y = y;
-			this.repository = repository;
+			this.n = n;
 		}
 		
 		@Override
 		public int getId() {
 			return x*n + y;
-		}
-
-		@Override
-		public IState transit(IAction action) {
-			int aid = action.getId();
-			int xx = x+MatrixAction.dirs[aid][0];
-			int yy = y+MatrixAction.dirs[aid][1];
-			int xid = xx*n+yy;
-			
-			return repository.getStateById(xid);
-		}
-
-		@Override
-		public List<IAction> getAllPossibleActions() {
-			List<IAction> ret = new ArrayList<>();
-			for(int d=0;d<4;d++) {
-				int xx = x+MatrixAction.dirs[d][0];
-				int yy = y+MatrixAction.dirs[d][1];
-				if(xx<0||yy<0||xx>=m||yy>=n) {
-					continue;
-				}
-				ret.add(repository.getActionById(d));
-			}
-			return ret;
 		}
 
 		@Override
@@ -79,13 +50,12 @@ public class QMatrix {
 	}
 
 	public static class MatrixRepository implements IRepository {
-		private int rows;
 		private int cols;
+		
 		private Map<Integer, IState> stateCache = new HashMap<>();
 		private List<IAction> actionList = List.of(new MatrixAction(0), new MatrixAction(1), new MatrixAction(2), new MatrixAction(3));
 
-		public MatrixRepository(int rows, int cols) {
-			this.rows = rows;
+		public MatrixRepository(int cols) {
 			this.cols = cols;
 		}
 
@@ -97,7 +67,7 @@ public class QMatrix {
 			int x = id / cols;
 			int y = id % cols;
 
-			IState create = new MatrixState(rows, cols, x, y, this);
+			IState create = new MatrixState(x, y, cols);
 			stateCache.put(id, create);
 
 			return create;
@@ -110,19 +80,18 @@ public class QMatrix {
 	}
 
 	public static class MatrixEnv implements IEnvironment {
+		private MatrixRepository repository;
+		
 		private int[][] map;
 
 		public MatrixEnv(int[][] map) {
 			this.map = map;
+			this.repository = new MatrixRepository(map[0].length);
 		}
-
-		public int[] getDim() {
-			return new int[]{map.length, map[0].length};
-		}
-
+				
 		@Override
 		public double reward(IState state, IAction action) {
-			IState next = state.transit(action);
+			IState next = transit(state, action);
 			MatrixState nextMatrixState = (MatrixState) next;
 			int x = nextMatrixState.x;
 			int y = nextMatrixState.y;
@@ -135,10 +104,48 @@ public class QMatrix {
 			MatrixState matrixState = (MatrixState) state;
 			int x = matrixState.x;
 			int y = matrixState.y;
+			
+			if (map[x][y] == 100 || map[x][y] == -100) {
+				return true;
+			}
+			
+			if (getAllPossibleActions(state).size() == 0) {
+				return true;
+			}
+			
+			return false;
+		}
 
-			return map[x][y] == 100 || map[x][y] == -100;
+		@Override
+		public IState transit(IState state, IAction action) {
+			int aid = action.getId();
+			MatrixState stat = (MatrixState)state;
+			int xx = stat.x+MatrixAction.dirs[aid][0];
+			int yy = stat.y+MatrixAction.dirs[aid][1];
+			int xid = xx*map[0].length+yy;
+			
+			return repository.getStateById(xid);
+		}
+
+		@Override
+		public List<IAction> getAllPossibleActions(IState state) {
+			List<IAction> ret = new ArrayList<>();
+			MatrixState stat = (MatrixState)state;
+			for(int d=0;d<4;d++) {
+				int xx = stat.x+MatrixAction.dirs[d][0];
+				int yy = stat.y+MatrixAction.dirs[d][1];
+				if(xx<0||yy<0||xx>=map.length||yy>=map[0].length) {
+					continue;
+				}
+				ret.add(repository.getActionById(d));
+			}
+			return ret;
 		}
 		
+		@Override
+		public void takeAction(IState state, IAction action) {
+
+		}
 	}
 
 	public static void main(String[] args) {
@@ -150,22 +157,23 @@ public class QMatrix {
 				{1,  1, 1,     1,  1}};
 
 		IEnvironment env = new MatrixEnv(map);
-		IRepository repository = new MatrixRepository(map.length, map[0].length);
 
-		IState init = new MatrixState(map.length, map[0].length, 0, 0, repository);
+		IState init = new MatrixState(0, 0, map[0].length);
 
-		int epoch = 20;
+		int epoch = 100;
 		double step = 1.0 / epoch;
 		double explore = 1.0;
 
+		BasicQ basicQ = new BasicQ(4, map[0].length * map.length, 0.7, explore);
+		
 		for(int i=0; i<epoch; i++) {
-			BasicQ basicQ = new BasicQ(4, map[0].length * map.length, explore, init, env);
-			basicQ.qLearn();
-
-			basicQ.say();
+			basicQ.setExplore(explore);
+			
+			basicQ.qLearn(env, init);
 
 			explore -= step;
 		}
-
+		
+		basicQ.say();
 	}
 }
