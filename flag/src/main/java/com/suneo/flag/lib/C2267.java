@@ -12,7 +12,7 @@ public class C2267 {
 			return false;
 		}
 		
-		if(grid[0][0] == '(') {
+		if(grid[0][0] == ')') {
 			return false;
 		}
 		
