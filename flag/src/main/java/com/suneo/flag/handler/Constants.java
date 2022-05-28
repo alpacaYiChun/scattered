@@ -11,6 +11,8 @@ public final class Constants {
     public static final String START_TIMESTAMP = "start_timestamp";
     public static final String END_TIMESTAMP = "end_timestamp";
     
+    public static final String PULLED_POSTS = "pulled_posts";
+    
     public static final String ERR = "err";
 
     public static final String STATUS = "status";

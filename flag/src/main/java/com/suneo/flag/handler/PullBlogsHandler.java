@@ -1,17 +1,15 @@
 package com.suneo.flag.handler;
 
+import com.google.gson.Gson;
 import com.suneo.flag.cache.RedisOperation;
 import com.suneo.flag.db.dao.FollowDAO;
 import com.suneo.flag.db.dao.PostDAO;
 import com.suneo.flag.db.operation.DynamodbOperation;
 import com.suneo.flag.lib.MergeIterator;
-import com.suneo.flag.lib.SerializationUtil;
 
-import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -105,7 +103,9 @@ public class PullBlogsHandler implements Handler{
 
         List<PostDAO> merged = MergeIterator.merge(posts, (e1, e2) -> compLong(e1.getTimestamp(), e2.getTimestamp()));
         
-        return Map.of("PULLED_POSTS", merged);
+        String json = new Gson().toJson(merged);
+        
+        return Map.of(Constants.PULLED_POSTS, json);
     }
 
     @Override
@@ -118,21 +118,10 @@ public class PullBlogsHandler implements Handler{
     }
 
     private PostDAO fromJson(String json) {
-        JSONObject obj = new JSONObject(json);
-        return PostDAO.builder()
-                .id(obj.getString("id"))
-                .content(obj.getString("content"))
-                .userId(obj.getString("userId"))
-                .timestamp(obj.getLong("timestamp"))
-                .build();
+        return new Gson().fromJson(json, PostDAO.class);
     }
 
     private String toJson(PostDAO post) {
-        JSONObject obj = new JSONObject();
-        obj.put("id", post.getId());
-        obj.put("content", post.getContent());
-        obj.put("userId", post.getUserId());
-        obj.put("timestamp", post.getTimestamp());
-        return obj.toString();
+        return new Gson().toJson(post);
     }
 }

@@ -2,10 +2,16 @@ package com.suneo.flag.controllers;
 
 import org.springframework.web.bind.annotation.RestController;
 
+import com.suneo.flag.handler.Constants;
+import com.suneo.flag.handler.PullBlogsHandler;
 import com.suneo.flag.queue.KinesisMessageQueue;
+
+import java.util.Map;
 
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
@@ -13,6 +19,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 public class PostController {
 	@Autowired
 	private KinesisMessageQueue kinesisQueue;
+	
+	@Autowired
+	private PullBlogsHandler pullBlogsHandler;
 	
     @PostMapping("create")
     public int createPost(@RequestBody String json) {
@@ -35,6 +44,17 @@ public class PostController {
     		return 200;
     	} catch (Exception e) {
     		return 500;
+    	}
+    }
+    
+    @GetMapping("pull/{username}")
+    public String pullPosts(@PathVariable String username) {
+    	Map<String, Object> params = Map.of(Constants.USER_NAME, username);
+    	try {
+	    	Map<String, Object> result = pullBlogsHandler.handle(params);
+	    	return result.get(Constants.PULLED_POSTS).toString();
+    	} catch (Exception e) {
+    		return e.toString();
     	}
     }
 }
