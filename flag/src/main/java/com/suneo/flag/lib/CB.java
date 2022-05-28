@@ -1,4 +1,4 @@
-package com.suneo.flag;
+package com.suneo.flag.lib;
 
 import java.util.ArrayList;
 import java.util.HashSet;

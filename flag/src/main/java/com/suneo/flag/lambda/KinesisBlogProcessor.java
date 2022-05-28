@@ -78,8 +78,7 @@ public class KinesisBlogProcessor implements RequestHandler<KinesisEvent, String
 		        ++goodJson;
 	    	} catch (Exception e) {
 	    		++badJson;
-	    	}
-	    	
+	    	}    	
 	    }
 	    
 	    boolean insertToDbOK = true;
