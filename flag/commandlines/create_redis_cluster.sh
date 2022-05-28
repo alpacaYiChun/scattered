@@ -1,0 +1,1 @@
+src/redis-cli --cluster create 10.0.0.214:6379 10.0.0.83:6379 10.0.0.141:6379 --cluster-replicas 0
