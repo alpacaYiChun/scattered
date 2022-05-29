@@ -3,6 +3,7 @@ package com.suneo.flag.controllers;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.suneo.flag.handler.Constants;
+import com.suneo.flag.handler.PullBlogByUserHandler;
 import com.suneo.flag.handler.PullBlogsHandler;
 import com.suneo.flag.queue.KinesisMessageQueue;
 
@@ -22,6 +23,9 @@ public class PostController {
 	
 	@Autowired
 	private PullBlogsHandler pullBlogsHandler;
+	
+	@Autowired
+	private PullBlogByUserHandler pullBlogByUserHandler;
 	
     @PostMapping("create")
     public int createPost(@RequestBody String json) {
@@ -53,6 +57,17 @@ public class PostController {
     	try {
 	    	Map<String, Object> result = pullBlogsHandler.handle(params);
 	    	return result.get(Constants.PULLED_POSTS).toString();
+    	} catch (Exception e) {
+    		return e.toString();
+    	}
+    }
+    
+    @GetMapping("pullbyuser/{username}")
+    public String pullPostsByUser(@PathVariable String username) {
+    	Map<String, Object> params = Map.of(Constants.USER_NAME, username);
+    	try {
+    		Map<String, Object> result = pullBlogByUserHandler.handle(params);
+    		return result.get(Constants.PULLED_POSTS).toString();
     	} catch (Exception e) {
     		return e.toString();
     	}
