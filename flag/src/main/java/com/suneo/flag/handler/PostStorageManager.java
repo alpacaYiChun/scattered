@@ -62,25 +62,20 @@ public class PostStorageManager {
             posts = combined;
         } else {
         	// Read DB
-            List<PostDAO> fromDB = dynamodbOperation.queryPosts(friend, Map.of());
+			List<PostDAO> fromDB = dynamodbOperation.queryPosts(friend, Map.of());
 
-            // sanity check, if other thead has already done this, refrain from doing so again
-            if(!redisOperation.exists(friend)) {
-                // Write Timeline Cache
-                List<String> postIds = fromDB.stream()
-                        .map(post -> post.getId())
-                        .collect(Collectors.toList());
-                redisOperation.setFullList(friend, postIds.size(), postIds);
+			// Write Timeline Cache
+			List<String> postIds = fromDB.stream().map(post -> post.getId()).collect(Collectors.toList());
+			redisOperation.setFullList(friend, postIds.size(), postIds);
 
-                // Write Content Cache
-                Map<String, String> createMap = new HashMap<>();
-                for (PostDAO post : fromDB) {
-                    createMap.put(post.getId(), toJson(post));
-                }
-                redisOperation.putMultiKeys(createMap);
-            }
-            
-            posts = fromDB;
+			// Write Content Cache
+			Map<String, String> createMap = new HashMap<>();
+			for (PostDAO post : fromDB) {
+				createMap.put(post.getId(), toJson(post));
+			}
+			redisOperation.putMultiKeys(createMap);
+
+			posts = fromDB;
         }
     	
     	posts.sort((e1, e2) -> compLong(e1.getTimestamp(), e2.getTimestamp()));
