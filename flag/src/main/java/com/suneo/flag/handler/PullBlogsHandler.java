@@ -1,7 +1,6 @@
 package com.suneo.flag.handler;
 
 import com.google.gson.Gson;
-import com.suneo.flag.cache.RedisOperation;
 import com.suneo.flag.db.dao.FollowDAO;
 import com.suneo.flag.db.dao.PostDAO;
 import com.suneo.flag.db.operation.DynamodbOperation;
@@ -11,18 +10,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Configuration
 public class PullBlogsHandler implements Handler{
     @Autowired
-    private DynamodbOperation dynamodbOperation;
-
+    private PostStorageManager postStorageManager;
+    
     @Autowired
-    private RedisOperation redisOperation;
+    private DynamodbOperation dynamodbOperation;
 
     @Override
     public Map<String, Object> handle(Map<String, Object> params) {
@@ -34,68 +31,10 @@ public class PullBlogsHandler implements Handler{
             List<FollowDAO> following = dynamodbOperation.queryFollowsByUser(user);
             following.stream().forEach(f -> {
                 String friend = f.getFollowing();
-                if(redisOperation.exists(friend)) {
-                	// List of PostIDs
-                    List<String> ids = redisOperation.getList(friend);
-
-                    // List of Posts from Cache
-                    Map<String, String> postsFromCache = redisOperation.getMultiKeys(ids.toArray(new String[0]));
-
-                    // List of Posts from DB
-                    List<PostDAO> postsFromDB = ids.stream()
-                            .filter(id -> !postsFromCache.containsKey(id))
-                            .map(id -> {
-                                try {
-                                    return dynamodbOperation.loadPost(id);
-                                } catch (Exception ex) {
-                                    return null;
-                                }
-                            }).filter(e -> e != null).collect(Collectors.toList());
-
-                    // Write Content Cache
-                    Map<String, String> createMap = new HashMap<>();
-                    for(PostDAO post : postsFromDB) {
-                        createMap.put(post.getId(), toJson(post));
-                    }
-                    if(createMap.size() > 0) {
-                        redisOperation.putMultiKeys(createMap);
-                    }
-
-                    // List of everything
-                    List<PostDAO> combined = new ArrayList<>(postsFromDB.size() + postsFromCache.size());
-                    combined.addAll(postsFromDB);
-                    postsFromCache.values().stream()
-                            .forEach(json -> combined.add(fromJson(json)));
-
-                    combined.sort((e1, e2) -> compLong(e1.getTimestamp(), e2.getTimestamp()));
-
-                    // Collect Result
-                    posts.add(combined);
-                } else {
-                	// Read DB
-                    List<PostDAO> fromDB = dynamodbOperation.queryPosts(friend, Map.of()).stream()
-                            .sorted((e1, e2) -> compLong(e1.getTimestamp(), e2.getTimestamp()))
-                            .collect(Collectors.toList());
-
-                    // sanity check, if other thead has already done this, refrain from doing so again
-                    if(!redisOperation.exists(friend)) {
-                        // Write Timeline Cache
-                        List<String> postIds = fromDB.stream()
-                                .map(post -> post.getId())
-                                .collect(Collectors.toList());
-                        redisOperation.setFullList(friend, postIds.size(), postIds);
-
-                        // Write Content Cache
-                        Map<String, String> createMap = new HashMap<>();
-                        for (PostDAO post : fromDB) {
-                            createMap.put(post.getId(), toJson(post));
-                        }
-                        redisOperation.putMultiKeys(createMap);
-                    }
-
-                    // Collect Result
-                    posts.add(fromDB);
-                }
+                
+                List<PostDAO> list = postStorageManager.queryUserTimeline(friend);
+                
+                posts.add(list);
             });
         } catch (Exception e) {
             return Map.of(Constants.ERR, e.getMessage());
@@ -115,13 +54,5 @@ public class PullBlogsHandler implements Handler{
     
     private int compLong(long a1, long a2) {
     	return a1<a2?-1:(a2>a1?1:0);
-    }
-
-    private PostDAO fromJson(String json) {
-        return new Gson().fromJson(json, PostDAO.class);
-    }
-
-    private String toJson(PostDAO post) {
-        return new Gson().toJson(post);
     }
 }
