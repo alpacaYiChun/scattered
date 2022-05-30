@@ -37,9 +37,11 @@ public class C2290 {
         	if(fetch.i==m-1&&fetch.j==n-1) {
         		return fetch.step;
         	}
+        	/*
         	if(map[fetch.i][fetch.j]<fetch.step) {
         		continue;
         	}
+        	*/
         	for(int d=0;d<4;d++) {
         		int ii = fetch.i+dirs[d][0];
         		int jj= fetch.j+dirs[d][1];
