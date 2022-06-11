@@ -21,17 +21,41 @@ public class RedisOperation {
         try {
             this.appendFixedLenListScript = Files.readString(Path.of("fixed_len_list_append.lua"));
         } catch (IOException e) {
-        	e.printStackTrace();
+        	this.appendFixedLenListScript = "local num = redis.call('llen', KEYS[1]);\n" + 
+        			"local limit = tonumber(ARGV[2])\n" + 
+        			"local expire = tonumber(ARGV[3])\n" + 
+        			"if num >= limit then\n" + 
+        			"	redis.call('lpop', KEYS[1])\n" + 
+        			"end\n" + 
+        			"redis.call('rpush', KEYS[1], ARGV[1])\n" + 
+        			"redis.call('expire', KEYS[1], expire)\n" + 
+        			"return redis.call('llen', KEYS[1])";
         }
         try {
             this.setFullListScript = Files.readString(Path.of("set_full_list.lua"));
         }  catch(IOException e) {
-        	e.printStackTrace();
+        	this.setFullListScript = "local already = redis.call('exists', KEYS[1])\n" + 
+        			"if already == 0 then\n" + 
+        			"	local len = tonumber(ARGV[1])\n" + 
+        			"	local expire = tonumber(ARGV[2])\n" + 
+        			"	for i = 3, len + 2\n" + 
+        			"	do\n" + 
+        			"		redis.call('rpush', KEYS[1], ARGV[i])\n" + 
+        			"	end\n" + 
+        			"	redis.call('expire', KEYS[1], expire)\n" + 
+        			"end";
         }
         try {
             this.incrKeysScript = Files.readString(Path.of("incr_keys_by.lua"));
         } catch (IOException e) {
-            e.printStackTrace();
+            this.incrKeysScript = "local len = tonumber(ARGV[1])\n" + 
+            		"local expire = tonumber(ARGV[2])\n" + 
+            		"\n" + 
+            		"for i=1, len\n" + 
+            		"do\n" + 
+            		"    redis.call('incrby', KEYS[i], ARGV[i+2])\n" + 
+            		"    redis.call('expire', KEYS[i], expire)\n" + 
+            		"end";
         }
     }
 
