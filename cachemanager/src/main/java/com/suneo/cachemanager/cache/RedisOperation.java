@@ -100,7 +100,7 @@ public class RedisOperation {
     }
     
     public void appendFixedLength(String key, String value) {
-    	appendFixedLength(key, value, 30);
+    	appendFixedLength(key, value, 2 * 60 * 60);
     }
     
     public void appendFixedLength(String key, String value, int expire) {
