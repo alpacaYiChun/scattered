@@ -68,7 +68,7 @@ public class RedisOperation {
     }
     
     public String set(String key, String value) {
-    	return cluster.set(key, value);
+    	return cluster.setex(key, 2 * 60 * 60, value);
     }
     
     public List<String> getList(String key) {
@@ -76,7 +76,7 @@ public class RedisOperation {
     }
     
     public void setFullList(String key, int len, List<String> values) {
-    	setFullList(key, len, values, 30);
+    	setFullList(key, len, values, 2*60*60);
     }
     
     public void setFullList(String key, int len, List<String> values, int expire) {
@@ -121,7 +121,7 @@ public class RedisOperation {
     }
 
     public void appendFixedLength(byte[] key, byte[] value) {
-    	appendFixedLength(key, value, 30);
+    	appendFixedLength(key, value, 2 * 60 * 60);
     }
     
     public void appendFixedLength(byte[] key, byte[] value, int expire) {
@@ -130,7 +130,7 @@ public class RedisOperation {
     }
 
     public void setFullList(byte[] key, int len, List<byte[]> values) {
-    	setFullList(key, len, values, 30);
+    	setFullList(key, len, values, 2 * 60 * 60);
     }
     
     public void setFullList(byte[] key, int len, List<byte[]> values, int expire) {

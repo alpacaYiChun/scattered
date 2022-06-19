@@ -20,108 +20,101 @@ import com.suneo.datamodel.db.operation.DynamodbOperation;
 @Configuration
 public class PostStorageManager {
 	private static final Logger logger = LogManager.getLogger(PostStorageManager.class);
-	
-	@Autowired
-    private DynamodbOperation dynamodbOperation;
 
-    @Autowired
-    private RedisOperation redisOperation;
-    
-    public List<PostDAO> queryUserTimeline(String friend) {
-    	logger.info("Querying timeline for {}", friend);
-    	
-    	try {
-	    	List<PostDAO> posts = List.of();
-	    	
-	    	if(redisOperation.exists(friend)) {
-	    		logger.info("{} recent blog list is in cache", friend);
-	        	// List of PostIDs
-	            List<String> ids = redisOperation.getList(friend);
-	            
-	            StringBuilder sb = new StringBuilder();
-	            for(String id : ids) {
-	            	sb.append(id).append(";");
-	            }
-	            logger.info("Got Post Ids from cache: {}", sb.toString());
-	
-	            // List of Posts from Cache
-	            Map<String, String> postsFromCache = redisOperation.getMultiKeys(ids.toArray(new String[0]));
-	
-	            // List of Posts from DB
-	            List<PostDAO> postsFromDB = ids.stream()
-	                    .filter(id -> !postsFromCache.containsKey(id))
-	                    .map(id -> {
-	                        try {
-	                        	logger.info("Getting post content from DB: {}", id);
-	                            return dynamodbOperation.loadPost(id);
-	                        } catch (Exception ex) {
-	                            return null;
-	                        }
-	                    }).filter(e -> e != null).collect(Collectors.toList());
-	
-	            // Write Content Cache
-	            Map<String, String> createMap = new HashMap<>();
-	            for(PostDAO post : postsFromDB) {
-	                createMap.put(post.getId(), toJson(post));
-	            }
-	            if(createMap.size() > 0) {
-	                redisOperation.putMultiKeys(createMap);
-	            }
-	
-	            // List of everything
-	            List<PostDAO> combined = new ArrayList<>(postsFromDB.size() + postsFromCache.size());
-	            combined.addAll(postsFromDB);
-	            postsFromCache.values().stream()
-	                    .forEach(json -> combined.add(fromJson(json)));
-	
-	            // Collect Result
-	            posts = combined;
-	        } else {
-	        	logger.info("{} recent blog list is not in cache", friend);
-	        	// Read DB
-				List<PostDAO> fromDB = dynamodbOperation.queryPosts(friend, Map.of());
-	
+	@Autowired
+	private DynamodbOperation dynamodbOperation;
+
+	@Autowired
+	private RedisOperation redisOperation;
+
+	public List<PostDAO> queryUserTimeline(String friend) {
+		logger.info("Querying timeline for {}", friend);
+
+		try {
+			List<PostDAO> posts = List.of();
+
+			if (redisOperation.exists(friend)) {
+				logger.info("{} recent blog list is in cache", friend);
+				// List of PostIDs
+				List<String> ids = redisOperation.getList(friend);
+
 				StringBuilder sb = new StringBuilder();
-				for(PostDAO post : fromDB) {
+				for (String id : ids) {
+					sb.append(id).append(";");
+				}
+				logger.info("Got Post Ids from cache: {}", sb.toString());
+
+				// List of Posts from Cache
+				Map<String, String> postsFromCache = redisOperation.getMultiKeys(ids.toArray(new String[0]));
+
+				// List of Posts from DB
+				List<PostDAO> postsFromDB = ids.stream().filter(id -> !postsFromCache.containsKey(id)).map(id -> {
+					try {
+						logger.info("Getting post content from DB: {}", id);
+						return dynamodbOperation.loadPost(id);
+					} catch (Exception ex) {
+						return null;
+					}
+				}).filter(e -> e != null).collect(Collectors.toList());
+
+				// Write Content Cache
+				Map<String, String> createMap = new HashMap<>();
+				for (PostDAO post : postsFromDB) {
+					createMap.put(post.getId(), toJson(post));
+				}
+				if (createMap.size() > 0) {
+					redisOperation.putMultiKeys(createMap);
+				}
+
+				// List of everything
+				List<PostDAO> combined = new ArrayList<>(postsFromDB.size() + postsFromCache.size());
+				combined.addAll(postsFromDB);
+				postsFromCache.values().stream().forEach(json -> combined.add(fromJson(json)));
+
+				// Collect Result
+				posts = combined;
+			} else {
+				logger.info("{} recent blog list is not in cache", friend);
+				// Read DB
+				List<PostDAO> fromDB = dynamodbOperation.queryPosts(friend, Map.of());
+
+				StringBuilder sb = new StringBuilder();
+				for (PostDAO post : fromDB) {
 					sb.append(post.getId()).append(";");
 				}
 				logger.info("Found from DB {}'s posts: {}", friend, sb.toString());
-				
+
 				// Write Timeline Cache
-				if(fromDB.size() > 0) {
-					List<String> postIds = fromDB.stream().map(post -> post.getId()).collect(Collectors.toList());
-					redisOperation.setFullList(friend, postIds.size(), postIds);
-		
-					// Write Content Cache
-					Map<String, String> createMap = new HashMap<>();
-					for (PostDAO post : fromDB) {
-						createMap.put(post.getId(), toJson(post));
-					}
-					redisOperation.putMultiKeys(createMap);
+				List<String> postIds = fromDB.stream().map(post -> post.getId()).collect(Collectors.toList());
+				redisOperation.setFullList(friend, postIds.size(), postIds);
+
+				// Write Content Cache
+				for (PostDAO post : fromDB) {
+					redisOperation.set(post.getId(), toJson(post));
 				}
-	
+
 				// Collect Result
 				posts = fromDB;
-	        }
-	    	
-	    	posts.sort((e1, e2) -> compLong(e1.getTimestamp(), e2.getTimestamp()));
-	    	
-	    	return posts;
-    	} catch (Exception e) {
-    		logger.error(ExceptionUtils.getStackTrace(e));
-    		return List.of();
-    	}
-    }
-    
-    private PostDAO fromJson(String json) {
-        return new Gson().fromJson(json, PostDAO.class);
-    }
+			}
 
-    private String toJson(PostDAO post) {
-        return new Gson().toJson(post);
-    }
-    
-    private int compLong(long a1, long a2) {
-    	return a1<a2?-1:(a2>a1?1:0);
-    }
+			posts.sort((e1, e2) -> compLong(e1.getTimestamp(), e2.getTimestamp()));
+
+			return posts;
+		} catch (Exception e) {
+			logger.error(ExceptionUtils.getStackTrace(e));
+			return List.of();
+		}
+	}
+
+	private PostDAO fromJson(String json) {
+		return new Gson().fromJson(json, PostDAO.class);
+	}
+
+	private String toJson(PostDAO post) {
+		return new Gson().toJson(post);
+	}
+
+	private int compLong(long a1, long a2) {
+		return a1 < a2 ? -1 : (a2 > a1 ? 1 : 0);
+	}
 }
