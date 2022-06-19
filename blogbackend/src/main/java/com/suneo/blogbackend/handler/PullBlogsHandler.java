@@ -7,6 +7,7 @@ import com.suneo.datamodel.db.dao.FollowDAO;
 import com.suneo.datamodel.db.dao.PostDAO;
 import com.suneo.datamodel.db.operation.DynamodbOperation;
 
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,15 +43,16 @@ public class PullBlogsHandler implements Handler{
                 
                 posts.add(list);
             });
+            
+            List<PostDAO> merged = MergeIterator.merge(posts, (e1, e2) -> compLong(e1.getTimestamp(), e2.getTimestamp()));
+            
+            String json = new Gson().toJson(merged);
+            
+            return Map.of(Constants.PULLED_POSTS, json);
         } catch (Exception e) {
+        	logger.error(ExceptionUtils.getStackTrace(e));
             return Map.of(Constants.ERR, e.getMessage());
-        }
-
-        List<PostDAO> merged = MergeIterator.merge(posts, (e1, e2) -> compLong(e1.getTimestamp(), e2.getTimestamp()));
-        
-        String json = new Gson().toJson(merged);
-        
-        return Map.of(Constants.PULLED_POSTS, json);
+        } 
     }
 
     @Override

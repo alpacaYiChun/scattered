@@ -39,7 +39,9 @@ public class MergeIterator {
 		});
 		
 		for(List<T> list : input) {
-			queue.add(new MergeItem<T>(list));
+			if(!list.isEmpty()) {
+				queue.add(new MergeItem<T>(list));
+			}
 		}
 		
 		List<T> ret = new ArrayList<T>();
