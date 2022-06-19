@@ -72,4 +72,9 @@ public class PostController {
     		return e.toString();
     	}
     }
+    
+    @GetMapping("add/{a}/{b}")
+    public int add(@PathVariable int a, @PathVariable int b) {
+    	return a+b;
+    }
 }

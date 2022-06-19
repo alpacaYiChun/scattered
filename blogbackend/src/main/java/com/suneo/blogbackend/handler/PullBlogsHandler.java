@@ -7,6 +7,8 @@ import com.suneo.datamodel.db.dao.FollowDAO;
 import com.suneo.datamodel.db.dao.PostDAO;
 import com.suneo.datamodel.db.operation.DynamodbOperation;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 
@@ -16,6 +18,8 @@ import java.util.Map;
 
 @Configuration
 public class PullBlogsHandler implements Handler{
+	private static final Logger logger = LogManager.getLogger(PullBlogsHandler.class);
+	
     @Autowired
     private PostStorageManager postStorageManager;
     
@@ -31,6 +35,7 @@ public class PullBlogsHandler implements Handler{
         try {
             List<FollowDAO> following = dynamodbOperation.queryFollowsByUser(user);
             following.stream().forEach(f -> {
+            	logger.info("{} is following {}", user, f);
                 String friend = f.getFollowing();
                 
                 List<PostDAO> list = postStorageManager.queryUserTimeline(friend);
