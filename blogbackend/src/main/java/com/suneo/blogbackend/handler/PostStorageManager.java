@@ -30,6 +30,9 @@ public class PostStorageManager {
 	public List<PostDAO> queryUserTimeline(String friend) {
 		logger.info("Querying timeline for {}", friend);
 
+		long timelineExpire = Long.parseLong(System.getenv("TIMELINE_EXPIRE"));
+		long blogExpire = Long.parseLong(System.getenv("BLOG_EXPIRE"));
+
 		try {
 			List<PostDAO> posts = null;
 
@@ -86,11 +89,11 @@ public class PostStorageManager {
 
 				// Write Timeline Cache
 				List<String> postIds = fromDB.stream().map(post -> post.getId()).collect(Collectors.toList());
-				redisOperation.setFullList(friend, postIds);
+				redisOperation.setFullList(friend, postIds, timelineExpire);
 
 				// Write Content Cache
 				for (PostDAO post : fromDB) {
-					redisOperation.set(post.getId(), toJson(post));
+					redisOperation.set(post.getId(), toJson(post), blogExpire);
 				}
 
 				// Collect Result

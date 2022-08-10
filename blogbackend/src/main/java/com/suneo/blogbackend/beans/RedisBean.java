@@ -16,9 +16,6 @@ import redis.clients.jedis.JedisPoolConfig;
 
 @Configuration
 public class RedisBean {
-	@Value("${spring.redis.cluster.nodes}")
-	private String nodes;
-	
 	@Value("${spring.redis.pool.max-active:100}")
 	private int maxActive;
 	
@@ -36,8 +33,9 @@ public class RedisBean {
 	
 	@Bean
 	public JedisCluster getRedisCluster() {
+		String allNodes = System.getenv("REDIS_NODELIST");
 		Set<HostAndPort> hostAndPorts = new HashSet<>();
-		Arrays.asList(nodes.split(",")).forEach(e->{
+		Arrays.asList(allNodes.split(",")).forEach(e->{
 			String[] parts = e.split(":");
 			String host = parts[0];
 			int port = Integer.parseInt(parts[1]);

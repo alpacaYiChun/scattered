@@ -67,16 +67,16 @@ public class RedisOperation {
     	return cluster.get(key);
     }
     
-    public String set(String key, String value) {
-        return cluster.setex(key, (long)2*60*60, value);
+    public String set(String key, String value, long expire) {
+        return cluster.setex(key, expire, value);
     }
     
     public List<String> getList(String key) {
     	return cluster.lrange(key, 0, -1);
     }
     
-    public void setFullList(String key, List<String> values) {
-    	setFullList(key, values, 2*60*60);
+    public void setFullList(String key, List<String> values, long expire) {
+    	setFullList(key, values, expire);
     }
     
     public void setFullList(String key, List<String> values, int expire) {
@@ -99,8 +99,8 @@ public class RedisOperation {
         cluster.eval(incrKeysScript, keys, params);
     }
     
-    public void appendFixedLength(String key, String value) {
-    	appendFixedLength(key, value, 2 * 60 * 60);
+    public void appendFixedLength(String key, String value, long expire) {
+    	appendFixedLength(key, value, expire);
     }
     
     public void appendFixedLength(String key, String value, int expire) {
@@ -120,8 +120,8 @@ public class RedisOperation {
         return cluster.lrange(key, 0, -1);
     }
 
-    public void appendFixedLength(byte[] key, byte[] value) {
-    	appendFixedLength(key, value, 2 * 60 * 60);
+    public void appendFixedLength(byte[] key, byte[] value, long expire) {
+    	appendFixedLength(key, value, expire);
     }
     
     public void appendFixedLength(byte[] key, byte[] value, int expire) {
@@ -129,8 +129,8 @@ public class RedisOperation {
         		Collections.singletonList(key), List.of(value, "10".getBytes(), (expire+"").getBytes()));
     }
 
-    public void setFullList(byte[] key, List<byte[]> values) {
-    	setFullList(key, values, 2 * 60 * 60);
+    public void setFullList(byte[] key, List<byte[]> values, long expire) {
+    	setFullList(key, values, expire);
     }
     
     public void setFullList(byte[] key, List<byte[]> values, int expire) {

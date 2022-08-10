@@ -49,6 +49,8 @@ public class KinesisBlogProcessor implements RequestHandler<KinesisEvent, String
 	
 	@Override
 	public String handleRequest(KinesisEvent input, Context context) {
+		long timelineExpire = Long.parseLong(System.getenv("TIMELINE_EXPIRE"));
+
 		if(this.db == null ||this.redisOperation == null) {
 			return "Unable to Process Request since the data storage is badly wired up!";
 		}
@@ -93,7 +95,7 @@ public class KinesisBlogProcessor implements RequestHandler<KinesisEvent, String
 	    		if (!strategy.shouldCache(postDAO)) {
 	    			continue;
 				}
-	    		redisOperation.appendFixedLength(postDAO.getUserId(), postDAO.getId());
+	    		redisOperation.appendFixedLength(postDAO.getUserId(), postDAO.getId(), timelineExpire);
 			}
 	    } catch (Exception e) {
 	    	logger.error(String.format("Alpaca Unable to Add Posts ot Cache %s", e.getMessage()));

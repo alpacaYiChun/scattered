@@ -30,5 +30,10 @@
 			<artifactId>amazon-kinesis-client</artifactId>
 			<version>1.14.7</version>
 		</dependency>
+		<dependency>
+			<groupId>com.amazonaws</groupId>
+			<artifactId>aws-java-sdk-s3</artifactId>
+			<version>1.12.130</version>
+		</dependency>
 	</dependencies>
 </project>
