@@ -8,7 +8,7 @@ import com.amazonaws.services.kinesis.model.PutRecordRequest;
 import com.amazonaws.services.kinesis.model.PutRecordResult;
 
 public class KinesisMessageQueue {
-    private AmazonKinesis kinesis;
+    private final AmazonKinesis kinesis;
     
     public KinesisMessageQueue(AmazonKinesis kinesis) {
     	this.kinesis = kinesis;

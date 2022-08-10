@@ -35,7 +35,7 @@ public class PullBlogsHandler implements Handler{
         
         try {
             List<FollowDAO> following = dynamodbOperation.queryFollowsByUser(user);
-            following.stream().forEach(f -> {
+            following.forEach(f -> {
             	logger.info("{} is following {}", user, f);
                 String friend = f.getFollowing();
                 
@@ -61,6 +61,6 @@ public class PullBlogsHandler implements Handler{
     }
     
     private int compLong(long a1, long a2) {
-    	return a1<a2?-1:(a2>a1?1:0);
+    	return Long.compare(a1,a2);
     }
 }

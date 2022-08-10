@@ -7,6 +7,9 @@ import com.suneo.blogbackend.handler.PullBlogByUserHandler;
 import com.suneo.blogbackend.handler.PullBlogsHandler;
 import com.suneo.shared.clients.KinesisMessageQueue;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.util.Map;
 
 import org.json.JSONObject;
@@ -18,6 +21,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 @RestController
 public class PostController {
+	private static final Logger logger = LogManager.getLogger(PostController.class);
+
 	@Autowired
 	private KinesisMessageQueue kinesisQueue;
 	
@@ -47,6 +52,7 @@ public class PostController {
     		
     		return 200;
     	} catch (Exception e) {
+			logger.error("Create blog error: {}", e.toString());
     		return 500;
     	}
     }

@@ -68,18 +68,18 @@ public class RedisOperation {
     }
     
     public String set(String key, String value) {
-    	return cluster.setex(key, 2 * 60 * 60, value);
+        return cluster.setex(key, (long)2*60*60, value);
     }
     
     public List<String> getList(String key) {
     	return cluster.lrange(key, 0, -1);
     }
     
-    public void setFullList(String key, int len, List<String> values) {
-    	setFullList(key, len, values, 2*60*60);
+    public void setFullList(String key, List<String> values) {
+    	setFullList(key, values, 2*60*60);
     }
     
-    public void setFullList(String key, int len, List<String> values, int expire) {
+    public void setFullList(String key, List<String> values, int expire) {
         List<String> toUse = new ArrayList<>(values.size() + 2);
         toUse.add((values.size()+""));
         toUse.add((expire+""));
@@ -129,11 +129,11 @@ public class RedisOperation {
         		Collections.singletonList(key), List.of(value, "10".getBytes(), (expire+"").getBytes()));
     }
 
-    public void setFullList(byte[] key, int len, List<byte[]> values) {
-    	setFullList(key, len, values, 2 * 60 * 60);
+    public void setFullList(byte[] key, List<byte[]> values) {
+    	setFullList(key, values, 2 * 60 * 60);
     }
     
-    public void setFullList(byte[] key, int len, List<byte[]> values, int expire) {
+    public void setFullList(byte[] key, List<byte[]> values, int expire) {
         List<byte[]> toUse = new ArrayList<>(values.size() + 2);
         toUse.add((values.size()+"").getBytes());
         toUse.add((expire+"").getBytes());
@@ -176,7 +176,7 @@ public class RedisOperation {
         RedisOperation op = new RedisOperation(cluster);
         byte[] key = "xiaodai".getBytes();
         List<byte[]> values = List.of("fuck1".getBytes(),"fuck2".getBytes());
-        op.setFullList(key, 2, values, 30);
+        op.setFullList(key, values, 30);
         
         for(byte[] value : op.getList(key)) {
         	System.out.println(new String(value));

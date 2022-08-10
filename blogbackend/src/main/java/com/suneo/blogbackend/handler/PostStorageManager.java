@@ -31,7 +31,7 @@ public class PostStorageManager {
 		logger.info("Querying timeline for {}", friend);
 
 		try {
-			List<PostDAO> posts = List.of();
+			List<PostDAO> posts = null;
 
 			if (redisOperation.exists(friend)) {
 				logger.info("{} recent blog list is in cache", friend);
@@ -69,7 +69,7 @@ public class PostStorageManager {
 				// List of everything
 				List<PostDAO> combined = new ArrayList<>(postsFromDB.size() + postsFromCache.size());
 				combined.addAll(postsFromDB);
-				postsFromCache.values().stream().forEach(json -> combined.add(fromJson(json)));
+				postsFromCache.values().forEach(json -> combined.add(fromJson(json)));
 
 				// Collect Result
 				posts = combined;
@@ -86,7 +86,7 @@ public class PostStorageManager {
 
 				// Write Timeline Cache
 				List<String> postIds = fromDB.stream().map(post -> post.getId()).collect(Collectors.toList());
-				redisOperation.setFullList(friend, postIds.size(), postIds);
+				redisOperation.setFullList(friend, postIds);
 
 				// Write Content Cache
 				for (PostDAO post : fromDB) {
@@ -115,6 +115,6 @@ public class PostStorageManager {
 	}
 
 	private int compLong(long a1, long a2) {
-		return a1 < a2 ? -1 : (a2 > a1 ? 1 : 0);
+		return Long.compare(a1, a2);
 	}
 }

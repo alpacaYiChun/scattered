@@ -102,7 +102,7 @@ public class KinesisBlogProcessor implements RequestHandler<KinesisEvent, String
 	    
 	    String finalResult = String.format("GoodJson %d, badJson %d, inserted DB: %b, insertedCache: %b", goodJson, badJson, insertToDbOK, insertToCacheOK);
 	    
-	    logger.info("Alpaca Finally: %s", finalResult);
+	    logger.info("Alpaca Finally: {}", finalResult);
 	    
 		return finalResult;
 	}

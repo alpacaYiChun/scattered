@@ -37,7 +37,7 @@ public class RedisBean {
 	@Bean
 	public JedisCluster getRedisCluster() {
 		Set<HostAndPort> hostAndPorts = new HashSet<>();
-		Arrays.asList(nodes.split(",")).stream().forEach(e->{
+		Arrays.asList(nodes.split(",")).forEach(e->{
 			String[] parts = e.split(":");
 			String host = parts[0];
 			int port = Integer.parseInt(parts[1]);
