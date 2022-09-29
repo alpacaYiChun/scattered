@@ -1,10 +1,13 @@
-local already = redis.call('exists', KEYS[1])
-if already == 0 then
-	local len = tonumber(ARGV[1])
-	local expire = tonumber(ARGV[2])
-	for i = 3, len + 2
-	do
-		redis.call('rpush', KEYS[1], ARGV[i])
-	end
-	redis.call('expire', KEYS[1], expire)
+local expect = tonumber(ARGV[1])
+local expire = tonumber(ARGV[2])
+
+local already = redis.call('llen', KEYS[1])
+local gap = expect - already
+
+local i = 3
+
+while i <= len + 2 and gap > 0 do
+    redis.call('rpush', KEYS[1], ARGV[i])
+    i = i + 1
+    gap = gap - 1
 end

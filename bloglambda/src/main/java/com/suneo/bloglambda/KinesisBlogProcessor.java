@@ -44,7 +44,13 @@ public class KinesisBlogProcessor implements RequestHandler<KinesisEvent, String
 	    	this.redisOperation = null;
 	    	logger.error(String.format("Alpaca Unable to initialize Cache: %s", e.getMessage()));
 	    }
-	    this.strategy = new AlwaysCacheStrategy();
+
+		String strategyType = System.getenv("CACHE_STRATEGY");
+		if(strategyType.equals("ALWAYS")) {
+			this.strategy = new AlwaysCacheStrategy();
+		} else {
+			this.strategy = new HotCacheStrategy(this.redisOperation);
+		}
 	}
 	
 	@Override
@@ -113,6 +119,19 @@ public class KinesisBlogProcessor implements RequestHandler<KinesisEvent, String
 		@Override
 		public boolean shouldCache(PostDAO item) {
 			return true;
+		}
+	}
+
+	private static class HotCacheStrategy implements ICacheStrategy<PostDAO> {
+		private final RedisOperation redisOperation;
+
+		public HotCacheStrategy(RedisOperation redisOperation) {
+			this.redisOperation = redisOperation;
+		}
+		@Override
+		public boolean shouldCache(PostDAO item) {
+			String key = item.getUserId();
+			return redisOperation.exists(key);
 		}
 	}
 }

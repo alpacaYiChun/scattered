@@ -34,16 +34,19 @@ public class RedisOperation {
         try {
             this.setFullListScript = Files.readString(Path.of("set_full_list.lua"));
         }  catch(IOException e) {
-        	this.setFullListScript = "local already = redis.call('exists', KEYS[1])\n" + 
-        			"if already == 0 then\n" + 
-        			"	local len = tonumber(ARGV[1])\n" + 
-        			"	local expire = tonumber(ARGV[2])\n" + 
-        			"	for i = 3, len + 2\n" + 
-        			"	do\n" + 
-        			"		redis.call('rpush', KEYS[1], ARGV[i])\n" + 
-        			"	end\n" + 
-        			"	redis.call('expire', KEYS[1], expire)\n" + 
-        			"end";
+        	this.setFullListScript = "local expect = tonumber(ARGV[1])\n" +
+                    "local expire = tonumber(ARGV[2])\n" +
+                    "\n" +
+                    "local already = redis.call('llen', KEYS[1])\n" +
+                    "local gap = expect - already\n" +
+                    "\n" +
+                    "local i = 3\n" +
+                    "\n" +
+                    "while i <= len + 2 and gap > 0 do\n" +
+                    "    redis.call('rpush', KEYS[1], ARGV[i])\n" +
+                    "    i = i + 1\n" +
+                    "    gap = gap - 1\n" +
+                    "end";
         }
         try {
             this.incrKeysScript = Files.readString(Path.of("incr_keys_by.lua"));
