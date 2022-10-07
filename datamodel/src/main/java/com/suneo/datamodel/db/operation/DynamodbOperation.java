@@ -143,6 +143,19 @@ public class DynamodbOperation {
     			.withConsistentRead(false);
     	return mapper.query(FollowDAO.class, expression).stream().collect(Collectors.toList());
     }
+
+	public List<FollowDAO> queryFollowedByUser(String userID) {
+		Map<String, AttributeValue> valueMap = new HashMap<>();
+		valueMap.put(":v_following", new AttributeValue().withS(userID));
+
+		DynamoDBQueryExpression<FollowDAO> expression = new DynamoDBQueryExpression<FollowDAO>()
+				.withIndexName("Following-UserId-index")
+				.withKeyConditionExpression("Following = :v_following")
+				.withExpressionAttributeValues(valueMap)
+				.withConsistentRead(false);
+
+		return mapper.query(FollowDAO.class, expression).stream().collect(Collectors.toList());
+	}
     
     public void insertPost(PostDAO post) {
     	mapper.save(post);

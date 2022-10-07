@@ -16,4 +16,6 @@ public final class Constants {
     public static final String ERR = "err";
 
     public static final String STATUS = "status";
+
+    public static final String ENABLE_WRITE_FANOUT = "enable_write_fanout";
 }

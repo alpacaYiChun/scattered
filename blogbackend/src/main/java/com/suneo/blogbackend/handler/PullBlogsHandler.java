@@ -3,6 +3,7 @@ package com.suneo.blogbackend.handler;
 import com.google.gson.Gson;
 import com.suneo.blogbackend.Constants;
 import com.suneo.blogbackend.lib.MergeIterator;
+import com.suneo.cachemanager.cache.RedisOperation;
 import com.suneo.datamodel.db.dao.FollowDAO;
 import com.suneo.datamodel.db.dao.PostDAO;
 import com.suneo.datamodel.db.operation.DynamodbOperation;
@@ -20,7 +21,10 @@ import java.util.Map;
 @Configuration
 public class PullBlogsHandler implements Handler{
 	private static final Logger logger = LogManager.getLogger(PullBlogsHandler.class);
-	
+
+    @Autowired
+    private RedisOperation redisOperation;
+
     @Autowired
     private PostStorageManager postStorageManager;
     
@@ -30,6 +34,18 @@ public class PullBlogsHandler implements Handler{
     @Override
     public Map<String, Object> handle(Map<String, Object> params) {
         String user = String.valueOf(params.get(Constants.USER_NAME));
+
+        boolean enableWriteFanout = Boolean.parseBoolean(System.getenv(Constants.ENABLE_WRITE_FANOUT));
+        if(enableWriteFanout) {
+            String key = "FAN_" + user;
+            if(redisOperation.exists(key)) {
+                List<String> ids = redisOperation.getList(key);
+
+                String json = new Gson().toJson(this.postStorageManager.fetchPosts(ids));
+
+                return Map.of(Constants.PULLED_POSTS, json);
+            }
+        }
 
         List<List<PostDAO>> posts = new ArrayList<>();
         

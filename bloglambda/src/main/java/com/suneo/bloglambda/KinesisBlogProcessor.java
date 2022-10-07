@@ -1,7 +1,10 @@
 package com.suneo.bloglambda;
 
+import java.lang.invoke.ConstantCallSite;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.suneo.datamodel.db.dao.FollowDAO;
 import org.json.JSONObject;
 
 import org.slf4j.Logger;
@@ -107,7 +110,18 @@ public class KinesisBlogProcessor implements RequestHandler<KinesisEvent, String
 	    	logger.error(String.format("Alpaca Unable to Add Posts ot Cache %s", e.getMessage()));
 	    	insertToCacheOK = false;
 	    }
-	    
+
+		boolean writeFanout = Boolean.parseBoolean(System.getenv(Constants.ENABLE_WRITE_FANOUT));
+		if (writeFanout) {
+			for(PostDAO postDAO : list) {
+				var friends = db.queryFollowedByUser(postDAO.getUserId());
+				for(FollowDAO follower : friends) {
+					String key = "FAN_" + follower.getUserId();
+					redisOperation.appendFixedLength(key, postDAO.getId(), 3600);
+				}
+			}
+		}
+
 	    String finalResult = String.format("GoodJson %d, badJson %d, inserted DB: %b, insertedCache: %b", goodJson, badJson, insertToDbOK, insertToCacheOK);
 	    
 	    logger.info("Alpaca Finally: {}", finalResult);

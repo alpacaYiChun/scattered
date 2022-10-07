@@ -47,35 +47,7 @@ public class PostStorageManager {
 				}
 				logger.info("Got Post Ids from cache: {}", sb.toString());
 
-				// List of Posts from Cache
-				Map<String, String> postsFromCache = redisOperation.getMultiKeys(ids.toArray(new String[0]));
-
-				// List of Posts from DB
-				List<PostDAO> postsFromDB = ids.stream().filter(id -> !postsFromCache.containsKey(id)).map(id -> {
-					try {
-						logger.info("Getting post content from DB: {}", id);
-						return dynamodbOperation.loadPost(id);
-					} catch (Exception ex) {
-						return null;
-					}
-				}).filter(e -> e != null).collect(Collectors.toList());
-
-				// Write Content Cache
-				Map<String, String> createMap = new HashMap<>();
-				for (PostDAO post : postsFromDB) {
-					createMap.put(post.getId(), toJson(post));
-				}
-				if (createMap.size() > 0) {
-					redisOperation.putMultiKeys(createMap);
-				}
-
-				// List of everything
-				List<PostDAO> combined = new ArrayList<>(postsFromDB.size() + postsFromCache.size());
-				combined.addAll(postsFromDB);
-				postsFromCache.values().forEach(json -> combined.add(fromJson(json)));
-
-				// Collect Result
-				posts = combined;
+				posts = this.fetchPosts(ids);
 			} else {
 				logger.info("{} recent blog list is not in cache", friend);
 				// Read DB
@@ -107,6 +79,36 @@ public class PostStorageManager {
 			logger.error(ExceptionUtils.getStackTrace(e));
 			return List.of();
 		}
+	}
+
+	public List<PostDAO> fetchPosts(List<String> ids) {
+		// List of Posts from Cache
+		Map<String, String> postsFromCache = redisOperation.getMultiKeys(ids.toArray(new String[0]));
+
+		// List of Posts from DB
+		List<PostDAO> postsFromDB = ids.stream().filter(id -> !postsFromCache.containsKey(id)).map(id -> {
+			try {
+				logger.info("Getting post content from DB: {}", id);
+				return dynamodbOperation.loadPost(id);
+			} catch (Exception ex) {
+				return null;
+			}
+		}).filter(e -> e != null).collect(Collectors.toList());
+
+		// Write Content Cache
+		Map<String, String> createMap = new HashMap<>();
+		for (PostDAO post : postsFromDB) {
+			createMap.put(post.getId(), toJson(post));
+		}
+		if (createMap.size() > 0) {
+			redisOperation.putMultiKeys(createMap);
+		}
+
+		List<PostDAO> combined = new ArrayList<>(postsFromDB.size() + postsFromCache.size());
+		combined.addAll(postsFromDB);
+		postsFromCache.values().forEach(json -> combined.add(fromJson(json)));
+
+		return combined;
 	}
 
 	private PostDAO fromJson(String json) {
